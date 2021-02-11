@@ -7,22 +7,22 @@
 #include <unistd.h>
 #include <string>
 #include "http.h"
+#include "wrappers.h"
 
 using namespace std;
 
-int open_file(const char *filename, http &response)
+void open_file(const char *filename, http &response)
 {
-	int fd = open(filename, O_RDONLY);
+	int fd = Open(filename, O_RDONLY);
 	char buf[4096] = {0};
 	int len = 0;
-	while ((len = read(fd, buf, sizeof(buf))) > 0)
+	while ((len = Read(fd, buf, sizeof(buf))) > 0)
 	{
-		string a(buf, sizeof(buf));
-		response.add_data(a);
+		response.add_data(string(buf, sizeof(buf)));
 	}
 	close(fd);
 
-	return 0; //todo: error/sucess code
+	//return 0; //todo: sucess flag
 }
 
 int get_line(int fd, char *buf, int buf_size)
@@ -32,15 +32,15 @@ int get_line(int fd, char *buf, int buf_size)
 	int n = 0;
 	while ((i < buf_size - 1) && (c != '\n'))
 	{
-		n = recv(fd, &c, 1, 0);
+		n = Recv(fd, &c, 1, 0);
 		if (n > 0)
 		{
 			if (c == '\r')
 			{
-				n = recv(fd, &c, 1, MSG_PEEK);
+				n = Recv(fd, &c, 1, MSG_PEEK);
 				if ((n > 0) && (c == '\n'))
 				{
-					recv(fd, &c, 1, 0);
+					Recv(fd, &c, 1, 0);
 				}
 				else
 				{

@@ -13,6 +13,8 @@
 #include "http.h"
 #include "http_response.h"
 #include "utils.h"
+#include "wrappers.h"
+#include <exception>
 
 using std::cout;
 
@@ -48,7 +50,7 @@ void event_data::mounted(int n_event_name)
 		status = 1;
 	}
 
-	epoll_ctl(epoll_root, op, fd, &epv);
+	Epoll_ctl(epoll_root, op, fd, &epv);
 }
 
 void event_data::unmounted()
@@ -58,7 +60,7 @@ void event_data::unmounted()
 		return;
 
 	status = 0;
-	epoll_ctl(epoll_root, EPOLL_CTL_DEL, fd, NULL);
+	Epoll_ctl(epoll_root, EPOLL_CTL_DEL, fd, NULL);
 }
 
 void event_data::set_root(int root_fd)
@@ -70,8 +72,16 @@ void acceptconn(event_data &node)
 {
 	struct sockaddr_in cin;
 	socklen_t len = sizeof(cin);
-	int cfd = accept(node.fd, (struct sockaddr *)&cin, &len);
-	fcntl(cfd, F_SETFL, O_NONBLOCK);
+	int cfd = Accept(node.fd, (struct sockaddr *)&cin, &len);
+	try
+	{
+		Fcntl(cfd, F_SETFL, O_NONBLOCK);
+	}
+	catch(const exception& e)
+	{
+		cout << e.what() << '\n';
+	}
+	
 	event_data cnode(cfd, recvdata);
 	cnode.mounted(EPOLLIN);
 	return;
@@ -80,12 +90,27 @@ void acceptconn(event_data &node)
 void recvdata(event_data &node)
 {
 	char buf[1024] = {0};
-	int len = get_line(node.fd, buf, sizeof(buf));
+	int len = 0;
+	try
+	{
+		len = get_line(node.fd, buf, sizeof(buf));
+	}
+	catch(const exception& e)
+	{
+		cerr << e.what() << '\n';
+		// todotodo
+	}
+	 
 
 	char method[12], path[1024], protocol[12];
 	sscanf(buf, "%[^ ] %[^ ] %[^ \n]", method, path, protocol);
 
-	recv(node.fd, buf, sizeof(buf), 0);
+	int ret = recv(node.fd, buf, sizeof(buf), 0);
+	if (ret == -1)
+	{
+		cerr << "empty buf fail" << endl;
+	}
+	
 
 #if 0	
 	http_request request(method, url, protocol);
@@ -100,29 +125,40 @@ void recvdata(event_data &node)
 
 	char *file = path + 1;
 	struct stat st;
-	int ret = stat(file, &st);
+	ret = stat(file, &st);
 	if (ret == -1)
 	{
+		// todotodo
 		return;
 	}
 
 	shared_ptr<http_response> response;
 	if (S_ISDIR(st.st_mode))
 	{
-		//todo
+		//todo: return directory
 	}
 	else if (S_ISREG(st.st_mode))
 	{
 		response = make_shared<http_response>(200, "OK", protocol, file, st.st_size);
-		ret = open_file(file, *response);
-		cout << ret;
-		if (ret != 0)
+		try
+		{
+			open_file(file, *response);
+		}
+		catch(const exception& e)
+		{
+			cerr << e.what() << '\n';
+			response->set_status_code(500);
+			response->set_status_descp("Please Try Again");
+		}
+		
+	
+/*		if (ret != 0)
 		{
 			response->set_status_code(500);
 			response->set_status_descp("Please Try Again");
 		}
-	}
-
+*/	}
+    // todo: extract method
 	if (len > 0)
 	{
 		event_data *w_node = new event_data(node.fd, senddata, response);
@@ -149,7 +185,7 @@ void senddata(event_data &node)
 	int ret = send(node.fd, response_buf.data(), response_buf.size(), 0);
 
 	node.unmounted();
-	delete &node;
+	
 	if (ret > 0)
 	{
 		event_data r_node = event_data(node.fd, recvdata);
@@ -158,6 +194,8 @@ void senddata(event_data &node)
 	else
 	{
 		close(node.fd);
+
 	}
+	delete &node;
 	return;
 }
