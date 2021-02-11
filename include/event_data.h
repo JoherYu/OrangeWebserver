@@ -29,7 +29,7 @@ private:
 	int fd;
 	int event_name;
 	void (*call_back)(event_data &);
-	shared_ptr<http> message;
+	shared_ptr<http> message; // todo:repalce with template
 	int status;
 	int len;
 	time_t last_active;
