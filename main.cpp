@@ -4,8 +4,8 @@
 int main(int argc, char *argv[])
 {
 	chdir("./");
-	const int a = 1000;
-	server<a> instance(5000);
+	const int MAX_EVENT_NUMBER = 1000;
+	server<MAX_EVENT_NUMBER> instance(5000);
 	instance.init();
 	instance.start();
 }

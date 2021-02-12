@@ -6,6 +6,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string>
+#include <iostream>
 #include "http.h"
 #include "wrappers.h"
 
@@ -16,6 +17,9 @@ void open_file(const char *filename, http &response)
 	int fd = Open(filename, O_RDONLY);
 	char buf[4096] = {0};
 	int len = 0;
+
+	cout << "opening file " << filename << endl;
+
 	while ((len = Read(fd, buf, sizeof(buf))) > 0)
 	{
 		response.add_data(string(buf, sizeof(buf)));

@@ -89,7 +89,7 @@ void acceptconn(event_data &node)
 	{
 		cout << e.what() << '\n';
 	}
-
+    cout << "new connection from " << inet_ntoa(cin.sin_addr) << ":" << ntohs(cin.sin_port) << endl; 
 	event_data cnode(cfd, recvdata);
 	cnode.mounted(EPOLLIN);
 	return;
@@ -106,10 +106,13 @@ void recvdata(event_data &node)
 	}
 	catch (const exception &e)
 	{
+		cerr << "fail to get_line" << endl;
 		cerr << e.what() << '\n';
 		event_data::error_mounted(node.fd, response, 500, "Server Error", "content recive error");
 		return;
 	}
+
+    cout << buf << endl;
 
 	char method[12], path[1024], protocol[12];
 	sscanf(buf, "%[^ ] %[^ ] %[^ \n]", method, path, protocol);
@@ -155,6 +158,7 @@ void recvdata(event_data &node)
 		}
 		catch (const exception &e)
 		{
+			cerr << "fail to open file " << file << endl;
 			cerr << e.what() << '\n';
 			response->set_status_code(500);
 			response->set_status_descp("Please Try Again");
@@ -179,7 +183,8 @@ void senddata(event_data &node)
 		response->get_protocol() + " " + response->get_status_code() + " " + response->get_headers() + response->get_fix_headers() +
 		"\r\n" +
 		response->get_data();
-
+    
+	cout << "sending response with status code " << response->get_status_code() << endl; 
 	int ret = send(node.fd, response_buf.data(), response_buf.size(), 0);
 
 	node.unmounted();

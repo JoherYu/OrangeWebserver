@@ -2,6 +2,9 @@
 #define SERVER_H
 
 #include <sys/epoll.h>
+#include <iostream>
+
+using namespace std;
 
 template <int MAX_EVENT_NUMBER>
 class server
@@ -35,6 +38,7 @@ server<MAX_EVENT_NUMBER>::server(int port) : PORT(port){};
 template <int MAX_EVENT_NUMBER>
 void server<MAX_EVENT_NUMBER>::init()
 {
+    cout << "initializing server" << endl;
 
 	epoll_fd = Epoll_create(MAX_EVENT_NUMBER + 1);
 	event_data::set_root(epoll_fd);
@@ -53,11 +57,14 @@ void server<MAX_EVENT_NUMBER>::init()
 
 	event_data *lnode = new event_data(lfd, acceptconn); // delete isn't necessary
 	lnode->mounted(EPOLLIN);
+
+	cout << "server initialization complete" << endl;
 }
 
 template <int MAX_EVENT_NUMBER>
 void server<MAX_EVENT_NUMBER>::start()
 {
+	cout << "server start" << endl;
 	while (1)
 	{
 		int fd_count = Epoll_wait(epoll_fd, events, MAX_EVENT_NUMBER + 1, 1000);
