@@ -5,6 +5,7 @@
 #include <time.h>
 #include <memory>
 #include "http.h"
+#include "http_response.h"
 
 using namespace std;
 
@@ -34,6 +35,9 @@ private:
 	int len;
 	time_t last_active;
 	static int epoll_root;
+
+	static void error_mounted(int fd, shared_ptr<http_response> response, int error_code, string error_descp, string error_info);
+
 };
 
 void acceptconn(event_data &node);

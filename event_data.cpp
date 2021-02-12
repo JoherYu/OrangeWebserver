@@ -53,6 +53,14 @@ void event_data::mounted(int n_event_name)
 	Epoll_ctl(epoll_root, op, fd, &epv);
 }
 
+void event_data::error_mounted(int fd, shared_ptr<http_response> response, int error_code, string error_descp, string error_info)
+{
+	response = make_shared<http_response>(error_code, error_descp);
+	response->set_error_content(error_info);
+	event_data *w_node = new event_data(fd, senddata, response);
+	w_node->mounted(EPOLLOUT);
+}
+
 void event_data::unmounted()
 {
 
@@ -77,11 +85,11 @@ void acceptconn(event_data &node)
 	{
 		Fcntl(cfd, F_SETFL, O_NONBLOCK);
 	}
-	catch(const exception& e)
+	catch (const exception &e)
 	{
 		cout << e.what() << '\n';
 	}
-	
+
 	event_data cnode(cfd, recvdata);
 	cnode.mounted(EPOLLIN);
 	return;
@@ -89,18 +97,19 @@ void acceptconn(event_data &node)
 
 void recvdata(event_data &node)
 {
+	shared_ptr<http_response> response;
 	char buf[1024] = {0};
 	int len = 0;
 	try
 	{
 		len = get_line(node.fd, buf, sizeof(buf));
 	}
-	catch(const exception& e)
+	catch (const exception &e)
 	{
 		cerr << e.what() << '\n';
-		// todotodo
+		event_data::error_mounted(node.fd, response, 500, "Server Error", "content recive error");
+		return;
 	}
-	 
 
 	char method[12], path[1024], protocol[12];
 	sscanf(buf, "%[^ ] %[^ ] %[^ \n]", method, path, protocol);
@@ -110,7 +119,6 @@ void recvdata(event_data &node)
 	{
 		cerr << "empty buf fail" << endl;
 	}
-	
 
 #if 0	
 	http_request request(method, url, protocol);
@@ -123,16 +131,17 @@ void recvdata(event_data &node)
 
 	node.unmounted();
 
-	char *file = path + 1;
+	char *file_path = path + 1;
 	struct stat st;
+	auto file = file_path[0] == '\0' ? "index.html" : file_path;
 	ret = stat(file, &st);
 	if (ret == -1)
 	{
-		// todotodo
+		perror("stat error:");
+		event_data::error_mounted(node.fd, response, 404, "Not Found", "resouce is missing");
 		return;
 	}
 
-	shared_ptr<http_response> response;
 	if (S_ISDIR(st.st_mode))
 	{
 		//todo: return directory
@@ -144,29 +153,18 @@ void recvdata(event_data &node)
 		{
 			open_file(file, *response);
 		}
-		catch(const exception& e)
+		catch (const exception &e)
 		{
 			cerr << e.what() << '\n';
 			response->set_status_code(500);
 			response->set_status_descp("Please Try Again");
 		}
-		
-	
-/*		if (ret != 0)
-		{
-			response->set_status_code(500);
-			response->set_status_descp("Please Try Again");
-		}
-*/	}
-    // todo: extract method
+	}
+
 	if (len > 0)
 	{
 		event_data *w_node = new event_data(node.fd, senddata, response);
 		w_node->mounted(EPOLLOUT);
-	}
-	else if (len == 0)
-	{
-		close(node.fd);
 	}
 	else
 	{
@@ -178,14 +176,14 @@ void senddata(event_data &node)
 {
 	auto response = node.message;
 	string response_buf =
-		response->get_protocol() + " " + response->get_status_code() + " " + response->get_headers() +
+		response->get_protocol() + " " + response->get_status_code() + " " + response->get_headers() + response->get_fix_headers() +
 		"\r\n" +
 		response->get_data();
 
 	int ret = send(node.fd, response_buf.data(), response_buf.size(), 0);
 
 	node.unmounted();
-	
+
 	if (ret > 0)
 	{
 		event_data r_node = event_data(node.fd, recvdata);
@@ -194,7 +192,6 @@ void senddata(event_data &node)
 	else
 	{
 		close(node.fd);
-
 	}
 	delete &node;
 	return;
