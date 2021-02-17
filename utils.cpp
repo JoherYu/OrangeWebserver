@@ -78,18 +78,43 @@ string get_file_type(string filename)
 	}
 }
 
-map<string,string> get_conf()
+map<string, string> get_conf(const char *filename)
 {
-    cout << "configure info:" << endl;
 	map<string, string> conf;
-    ifstream conf_file("init.conf");
-	char line[256];
-	char* key, *value;
-    while(conf_file.getline(line, 256)){
-		key = strtok(line, "=");
-		value = strtok(NULL, "=");
-		cout << key << " : " << value << endl;
-		conf.insert(pair<string, string>(key, value));
+
+	ifstream conf_file(filename);
+	if (conf_file.fail())
+	{
+		if (errno == 2)
+		{
+			cerr << "can't find configure file, load default configuration:" << endl;
+		}
+		else
+		{
+			cerr << "can't load configure file, load default configuration:" << endl;
+		}
+		conf.insert(pair<string, string>("port", "5000"));
+		conf.insert(pair<string, string>("max_event_number", "1000"));
+		for (auto item : conf)
+		{
+			cout << item.first << " : " << item.second << endl;
+		}
+		cout << endl;
 	}
+	else
+	{
+		cout << "configure info:" << endl;
+		char line[256];
+		char *key, *value;
+		while (conf_file.getline(line, 256))
+		{
+			key = strtok(line, "=");
+			value = strtok(NULL, "=");
+			cout << key << " : " << value << endl;
+			conf.insert(pair<string, string>(key, value));
+		}
+		cout << endl;
+	}
+
 	return conf;
 }

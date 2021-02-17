@@ -9,7 +9,7 @@
 
 using namespace std;
 
-const int BUFLEN = 4096;
+//const int BUFLEN = 4096;
 
 class event_data
 {
@@ -30,7 +30,7 @@ private:
 	int fd;
 	int event_name;
 	void (*call_back)(event_data &);
-	shared_ptr<http> message; // todo:repalce with template
+	shared_ptr<http> message; 
 	int status;
 	int len;
 	time_t last_active;
