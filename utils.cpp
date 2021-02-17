@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include "http.h"
 #include "wrappers.h"
 
@@ -75,4 +76,20 @@ string get_file_type(string filename)
 	{
 		return "image/x-icon";
 	}
+}
+
+map<string,string> get_conf()
+{
+    cout << "configure info:" << endl;
+	map<string, string> conf;
+    ifstream conf_file("init.conf");
+	char line[256];
+	char* key, *value;
+    while(conf_file.getline(line, 256)){
+		key = strtok(line, "=");
+		value = strtok(NULL, "=");
+		cout << key << " : " << value << endl;
+		conf.insert(pair<string, string>(key, value));
+	}
+	return conf;
 }
