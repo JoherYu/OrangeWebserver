@@ -17,7 +17,7 @@
 #include <iostream>
 #include <exception>
 
-using std::cout;
+using namespace std;
 
 int event_data::epoll_root = 0;
 
@@ -54,7 +54,7 @@ void event_data::mounted(int n_event_name)
 	Epoll_ctl(epoll_root, op, fd, &epv);
 }
 
-void event_data::error_mounted(int fd, shared_ptr<http_response> response, int error_code, const string& error_descp, const string& error_info)
+void event_data::error_mounted(int fd, shared_ptr<http_response> response, int error_code, const string &error_descp, const string &error_info)
 {
 	response = make_shared<http_response>(error_code, error_descp);
 	response->set_error_content(error_info);
@@ -72,8 +72,6 @@ void event_data::unmounted()
 	Epoll_ctl(epoll_root, EPOLL_CTL_DEL, fd, NULL);
 }
 
-
-
 void acceptconn(event_data &node)
 {
 	struct sockaddr_in cin;
@@ -85,9 +83,10 @@ void acceptconn(event_data &node)
 	}
 	catch (const exception &e)
 	{
-		cout << e.what() << '\n';
+		cout << "[" << get_time() << "]" << e.what() << '\n';
 	}
-    cout << "new connection from " << inet_ntoa(cin.sin_addr) << ":" << ntohs(cin.sin_port) << endl; 
+	cout << "[" << get_time() << "]"
+		 << "new connection from " << inet_ntoa(cin.sin_addr) << ":" << ntohs(cin.sin_port) << endl;
 	event_data cnode(cfd, recvdata);
 	cnode.mounted(EPOLLIN);
 	return;
@@ -104,13 +103,14 @@ void recvdata(event_data &node)
 	}
 	catch (const exception &e)
 	{
-		cerr << "fail to get_line" << endl;
-		cerr << e.what() << '\n';
+		cerr << "[" << get_time() << "]"
+			 << "fail to get_line" << endl;
+		cerr << "[" << get_time() << "]" << e.what() << '\n';
 		event_data::error_mounted(node.fd, response, 500, "Server Error", "content recive error");
 		return;
 	}
 
-    cout << buf << endl;
+	cout << "[" << get_time() << "]" << buf << endl;
 
 	char method[12], path[1024], protocol[12];
 	sscanf(buf, "%[^ ] %[^ ] %[^ \n]", method, path, protocol);
@@ -118,7 +118,8 @@ void recvdata(event_data &node)
 	int ret = recv(node.fd, buf, sizeof(buf), 0);
 	if (ret == -1)
 	{
-		cerr << "empty buf fail" << endl;
+		cerr << "[" << get_time() << "]"
+			 << "empty buf fail" << endl;
 	}
 
 #if 0	
@@ -156,8 +157,9 @@ void recvdata(event_data &node)
 		}
 		catch (const exception &e)
 		{
-			cerr << "fail to open file " << file << endl;
-			cerr << e.what() << '\n';
+			cerr << "[" << get_time() << "]"
+				 << "fail to open file " << file << endl;
+			cerr << "[" << get_time() << "]" << e.what() << '\n';
 			response->set_status_code(500);
 			response->set_status_descp("Please Try Again");
 		}
@@ -181,8 +183,9 @@ void senddata(event_data &node)
 		response->get_protocol() + " " + response->get_status_code() + " " + response->get_headers() + response->get_fix_headers() +
 		"\r\n" +
 		response->get_data();
-    
-	cout << "sending response with status code " << response->get_status_code() << endl; 
+
+	cout << "[" << get_time() << "]"
+		 << "sending response with status code " << response->get_status_code() << endl;
 	int ret = send(node.fd, response_buf.data(), response_buf.size(), 0);
 
 	node.unmounted();

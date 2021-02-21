@@ -7,19 +7,20 @@
 
 #include "event_data.h"
 #include "wrappers.h"
+#include "utils.h"
 
 #include <cstdio>
 #include <string>
 
-
 server::server(int port, int max_event_number) : PORT(port), MAX_EVENT_NUMBER(max_event_number)
 {
-    events = new epoll_event[max_event_number + 1];
+	events = new epoll_event[max_event_number + 1];
 };
 
 void server::init()
 {
-    cout << "initializing server" << endl;
+	cout << "[" << get_time() << "]"
+		 << "initializing server" << endl;
 
 	epoll_fd = Epoll_create(MAX_EVENT_NUMBER + 1);
 	event_data::set_root(epoll_fd);
@@ -39,12 +40,14 @@ void server::init()
 	event_data *lnode = new event_data(lfd, acceptconn); // delete isn't necessary
 	lnode->mounted(EPOLLIN);
 
-	cout << "server initialization complete" << endl;
+	cout << "[" << get_time() << "]"
+		 << "server initialization complete" << endl;
 }
 
 void server::start()
 {
-	cout << "server start" << endl;
+	cout << "[" << get_time() << "]"
+		 << "server start" << endl;
 	while (1)
 	{
 		int fd_count = Epoll_wait(epoll_fd, events, MAX_EVENT_NUMBER + 1, 1000);

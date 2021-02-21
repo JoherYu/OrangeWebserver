@@ -7,7 +7,7 @@ using std::cout;
 
 http::http(string protocol, string headers, string data) : protocol(protocol), headers(headers), data(data) {}
 
-void http::add_data(const string& data)
+void http::add_data(const string &data)
 {
     if (this->data == "")
     {
@@ -18,5 +18,3 @@ void http::add_data(const string& data)
         this->data.append(data);
     }
 }
-
-

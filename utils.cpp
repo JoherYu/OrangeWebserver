@@ -1,6 +1,5 @@
 #include "utils.h"
 
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -15,7 +14,6 @@
 #include <iostream>
 #include <fstream>
 
-
 using namespace std;
 
 void open_file(const char *filename, http &response)
@@ -24,7 +22,8 @@ void open_file(const char *filename, http &response)
 	char buf[4096] = {0};
 	int len = 0;
 
-	cout << "opening file " << filename << endl;
+	cout << "[" << get_time() << "]"
+		 << "opening file " << filename << endl;
 
 	while ((len = Read(fd, buf, sizeof(buf))) > 0)
 	{
@@ -70,7 +69,7 @@ int get_line(int fd, char *buf, int buf_size)
 	return i;
 }
 
-string get_file_type(string& filename)
+string get_file_type(string &filename)
 {
 	string str_suffix = filename.substr(filename.find_last_of('.') + 1);
 	if (str_suffix == "jpg")
@@ -83,43 +82,99 @@ string get_file_type(string& filename)
 	}
 }
 
-map<string, string> get_conf(const char *filename)
+void load_default_conf(map<string, string> &configuration)
 {
-	map<string, string> conf;
+	configuration.insert(pair<string, string>("port", "5000"));
+	configuration.insert(pair<string, string>("max_event_number", "1000"));
+}
 
+void get_conf(const char *filename, map<string, string> &conf)
+{
 	ifstream conf_file(filename);
 	if (conf_file.fail())
 	{
 		if (errno == 2)
 		{
-			cerr << "can't find configure file, load default configuration:" << endl;
+			cerr << "[" << get_time() << "]"
+				 << "can't find configure file, load default configuration:" << endl;
 		}
 		else
 		{
-			cerr << "can't load configure file, load default configuration:" << endl;
+			cerr << "[" << get_time() << "]"
+				 << "can't load configure file, load default configuration:" << endl;
 		}
-		conf.insert(pair<string, string>("port", "5000"));
-		conf.insert(pair<string, string>("max_event_number", "1000"));
+		load_default_conf(conf);
 		for (auto item : conf)
 		{
-			cout << item.first << " : " << item.second << endl;
+			cout << "[" << get_time() << "]" << item.first << " : " << item.second << endl;
 		}
-		cout << endl;
+		cout << "[" << get_time() << "]" << endl;
 	}
 	else
 	{
-		cout << "configure info:" << endl;
+		cout << "[" << get_time() << "]"
+			 << "configure info:" << endl;
 		char line[256];
 		char *key, *value;
 		while (conf_file.getline(line, 256))
 		{
 			key = strtok(line, "=");
 			value = strtok(NULL, "=");
-			cout << key << " : " << value << endl;
+			if (key == 0)
+			{
+				continue;
+			}
+
+			cout << "[" << get_time() << "]" << key << " : " << value << endl;
 			conf.insert(pair<string, string>(key, value));
 		}
-		cout << endl;
+		cout << "[" << get_time() << "]" << endl;
 	}
 
-	return conf;
+	cout << "[" << get_time() << "]"
+		 << "set static file dir" << endl;
+	auto path_iter = conf.find("static_file_dir");
+	if (path_iter == conf.end())
+	{
+		/*
+	    char curr_path[256];
+	    char *ret = getcwd(curr_path, 256);
+        if (ret == NULL)
+	    {
+		    cerr << "work directory couldn't be determined or pathname was too large.";
+            exit(-1);
+	    }
+		*/
+
+		conf.insert(pair<string, string>("static_file_dir", "./"));
+		cout << "[" << get_time() << "]"
+			 << "change static_file_dir to work dir" << endl;
+	}
+	else
+	{
+		const char *path = (path_iter->second).data();
+		struct stat st;
+		int ret = stat(path, &st);
+		if (ret == -1 || !S_ISDIR(st.st_mode))
+		{
+			perror("stat error:");
+			cout << "[" << get_time() << "]"
+				 << "item: static_file_dir error, change to work dir" << endl;
+			conf["static_file_dir"] = "./";
+		}
+		else
+		{
+			cout << "[" << get_time() << "]"
+				 << "static file dir at " << path << "\n"
+				 << endl;
+		}
+	}
+}
+
+char *get_time()
+{
+	time_t now = time(0);
+	char *dt = ctime(&now);
+	dt[strlen(dt) - 1] = 0;
+	return dt;
 }
