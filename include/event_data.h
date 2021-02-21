@@ -1,15 +1,16 @@
 #ifndef EVENT_DATA_H
 #define EVENT_DATA_H
 
-#include <sys/epoll.h>
-#include <time.h>
-#include <memory>
 #include "http.h"
 #include "http_response.h"
 
-using namespace std;
+#include <sys/epoll.h>
 
-//const int BUFLEN = 4096;
+#include <ctime>
+#include <memory>
+
+
+using namespace std;
 
 class event_data
 {
@@ -36,8 +37,13 @@ private:
 	time_t last_active;
 	static int epoll_root;
 
-	static void error_mounted(int fd, shared_ptr<http_response> response, int error_code, string error_descp, string error_info);
+	static void error_mounted(int fd, shared_ptr<http_response> response, int error_code, const string& error_descp, const string& error_info);
 
+};
+
+inline void event_data::set_root(int root_fd)
+{
+	epoll_root = root_fd;
 };
 
 void acceptconn(event_data &node);

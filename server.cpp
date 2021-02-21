@@ -1,13 +1,15 @@
+#include "server.h"
+
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 
-#include <stdio.h>
-#include <string.h>
 #include "event_data.h"
-#include "server.h"
 #include "wrappers.h"
+
+#include <cstdio>
+#include <string>
 
 
 server::server(int port, int max_event_number) : PORT(port), MAX_EVENT_NUMBER(max_event_number)

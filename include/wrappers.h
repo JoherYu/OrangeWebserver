@@ -3,9 +3,11 @@
 
 #include <arpa/inet.h>
 #include <errno.h>
-#include <stdlib.h>
+
 #include "event_exception.h"
-#include <string.h>
+
+#include <cstdlib>
+#include <cstring>
 
 void error_exit(const char* s);
 int Epoll_create(int size);

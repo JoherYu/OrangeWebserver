@@ -1,15 +1,20 @@
 #include "utils.h"
-#include <stdio.h>
+
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+#include "http.h"
+#include "wrappers.h"
+
+#include <cstdio>
 #include <string>
 #include <iostream>
 #include <fstream>
-#include "http.h"
-#include "wrappers.h"
+
 
 using namespace std;
 
@@ -65,7 +70,7 @@ int get_line(int fd, char *buf, int buf_size)
 	return i;
 }
 
-string get_file_type(string filename)
+string get_file_type(string& filename)
 {
 	string str_suffix = filename.substr(filename.find_last_of('.') + 1);
 	if (str_suffix == "jpg")

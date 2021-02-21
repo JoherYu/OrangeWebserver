@@ -1,6 +1,7 @@
-#include <unistd.h>
 #include "server.h"
 #include "utils.h"
+
+#include <unistd.h>
 
 int main(int argc, char *argv[])
 {

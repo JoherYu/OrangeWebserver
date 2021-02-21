@@ -1,19 +1,20 @@
 #include "event_data.h"
-#include <time.h>
+
+#include "http.h"
+#include "http_response.h"
+#include "utils.h"
+#include "wrappers.h"
+
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <memory.h>
 #include <sys/stat.h>
-#include <stdio.h>
+
+#include <cstdio>
 #include <iostream>
-#include "http.h"
-#include "http_response.h"
-#include "utils.h"
-#include "wrappers.h"
 #include <exception>
 
 using std::cout;
@@ -53,7 +54,7 @@ void event_data::mounted(int n_event_name)
 	Epoll_ctl(epoll_root, op, fd, &epv);
 }
 
-void event_data::error_mounted(int fd, shared_ptr<http_response> response, int error_code, string error_descp, string error_info)
+void event_data::error_mounted(int fd, shared_ptr<http_response> response, int error_code, const string& error_descp, const string& error_info)
 {
 	response = make_shared<http_response>(error_code, error_descp);
 	response->set_error_content(error_info);
@@ -71,10 +72,7 @@ void event_data::unmounted()
 	Epoll_ctl(epoll_root, EPOLL_CTL_DEL, fd, NULL);
 }
 
-void event_data::set_root(int root_fd)
-{
-	epoll_root = root_fd;
-};
+
 
 void acceptconn(event_data &node)
 {

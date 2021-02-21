@@ -10,7 +10,7 @@ class http
 public:
     http() = default;
     http(string protocol, string headers, string data);
-    void add_data(string data);
+    void add_data(const string& data);
     string get_protocol();
     string get_headers();
     string get_data();
@@ -23,5 +23,21 @@ protected:
     string headers = "";
     string data = "";
 };
+
+inline string http::get_protocol()
+{
+    return protocol;
+}
+
+inline string http::get_headers()
+{
+    return headers;
+}
+
+
+inline string http::get_data()
+{
+    return data;
+}
 
 #endif

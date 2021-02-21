@@ -1,10 +1,11 @@
 #include "wrappers.h"
 
-#include <stdio.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <fcntl.h>
+
+#include <cstdio>
 
 void error_exit(const char *s)
 {
