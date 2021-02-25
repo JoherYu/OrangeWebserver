@@ -106,6 +106,7 @@ void recvdata(event_data &node)
 		cerr << "[" << get_time() << "]"
 			 << "fail to get_line" << endl;
 		cerr << "[" << get_time() << "]" << e.what() << '\n';
+		node.unmounted();
 		event_data::error_mounted(node.fd, response, 500, "Server Error", "content recive error");
 		return;
 	}
@@ -140,6 +141,7 @@ void recvdata(event_data &node)
 	if (ret == -1)
 	{
 		perror("stat error:");
+		node.unmounted();
 		event_data::error_mounted(node.fd, response, 404, "Not Found", "resouce is missing");
 		return;
 	}
