@@ -44,6 +44,11 @@ int get_line(int fd, char *buf, int buf_size)
 		n = Recv(fd, &c, 1, 0);
 		if (n > 0)
 		{
+			if (c == '\0')
+			{
+				continue;
+			}
+			
 			if (c == '\r')
 			{
 				n = Recv(fd, &c, 1, MSG_PEEK);

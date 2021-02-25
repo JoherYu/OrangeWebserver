@@ -87,10 +87,22 @@ int Epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)
 	return ret;
 }
 
-ssize_t Recv(int sockfd, void *buf, size_t len, int flags)
+ssize_t Recv(int sockfd, char *buf, size_t len, int flags)
 {
 	ssize_t ret = recv(sockfd, buf, len, flags);
-	throw_exception(ret);
+	if (ret < 0)
+	{
+		if ((errno == EAGAIN) || (errno == EINTR))
+		{
+			//todo: time out
+			return 1; // for get_line: continue
+		}
+		else
+		{
+			throw_exception(ret);
+		}
+	}
+
 	return ret;
 }
 

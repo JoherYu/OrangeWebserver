@@ -141,7 +141,6 @@ void recvdata(event_data &node)
 	if (ret == -1)
 	{
 		perror("stat error:");
-		node.unmounted();
 		event_data::error_mounted(node.fd, response, 404, "Not Found", "resouce is missing");
 		return;
 	}
