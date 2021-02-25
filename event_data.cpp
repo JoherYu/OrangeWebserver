@@ -114,12 +114,12 @@ void recvdata(event_data &node)
 
 	char method[12], path[1024], protocol[12];
 	sscanf(buf, "%[^ ] %[^ ] %[^ \n]", method, path, protocol);
-
-	int ret = recv(node.fd, buf, sizeof(buf), 0);
-	if (ret == -1)
-	{
-		cerr << "[" << get_time() << "]"
-			 << "empty buf fail" << endl;
+	while (1) {
+		len = get_line(node.fd, buf, sizeof(buf));	
+		if (buf[0] == '\n') {
+			break;	
+		} else if (len == -1)
+			break;
 	}
 
 #if 0	
@@ -136,7 +136,7 @@ void recvdata(event_data &node)
 	char *file_path = path + 1;
 	struct stat st;
 	auto file = file_path[0] == '\0' ? "index.html" : file_path;
-	ret = stat(file, &st);
+	int ret = stat(file, &st);
 	if (ret == -1)
 	{
 		perror("stat error:");
@@ -144,11 +144,7 @@ void recvdata(event_data &node)
 		return;
 	}
 
-	if (S_ISDIR(st.st_mode))
-	{
-		//todo: return directory
-	}
-	else if (S_ISREG(st.st_mode))
+    if (S_ISREG(st.st_mode))
 	{
 		response = make_shared<http_response>(200, "OK", protocol, file, st.st_size);
 		try
