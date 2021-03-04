@@ -12,9 +12,12 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 #include <cstdio>
 #include <iostream>
+#include <vector>
+#include <array>
 #include <exception>
 
 using namespace std;
@@ -35,7 +38,15 @@ event_data::event_data(int fd, void (*call_back)(event_data &), shared_ptr<http>
 
 void event_data::process()
 {
-	(*call_back)(*this);
+	if (call_back)
+	{
+		(*call_back)(*this); /* find solution*/
+	}
+	else
+	{
+		this->unmounted();
+		//close?
+	}
 }
 
 void event_data::mounted(int n_event_name)
@@ -100,6 +111,13 @@ void recvdata(event_data &node)
 	try
 	{
 		len = get_line(node.fd, buf, sizeof(buf));
+		if (len == 0)
+		{
+			node.unmounted();
+			//close(node.fd);
+
+			return;
+		}
 	}
 	catch (const exception &e)
 	{
@@ -115,53 +133,239 @@ void recvdata(event_data &node)
 
 	char method[12], path[1024], protocol[12];
 	sscanf(buf, "%[^ ] %[^ ] %[^ \n]", method, path, protocol);
-	while (1) {
-		len = get_line(node.fd, buf, sizeof(buf));	
-		if (buf[0] == '\n') {
-			break;	
-		} else if (len == -1)
-			break;
-	}
-
-#if 0	
-	http_request request(method, url, protocol);
-    if(method == "POST"){
-		buf = {0};	
-	    recv(node.fd, buf, sizeof(buf), 0);
-		// todo extract data
-	}
-#endif
-
 	node.unmounted();
 
-	char *file_path = path + 1;
+	char *content = http::deal_headers(node.fd);
+
+	array<string, 2> str_p = *split_in_2(path + 1, "/");
+	if (str_p.front() == " ")
+	{
+		str_p.front() = "index.html";
+	};
+	;
 	struct stat st;
-	auto file = file_path[0] == '\0' ? "index.html" : file_path;
-	int ret = stat(file, &st);
-	if (ret == -1)
+	if (strcmp(method, "GET") == 0)
 	{
-		perror("stat error:");
-		event_data::error_mounted(node.fd, response, 404, "Not Found", "resouce is missing");
-		return;
+		string type = get_file_type(str_p.front());
+		if (type == "")
+		{
+			string des_path = "./components/" + str_p.front();
+			int ret = stat(des_path.data(), &st);
+			if (ret == -1)
+			{
+				perror("stat error:");
+				event_data::error_mounted(node.fd, response, 404, "Not Found", "resouce is missing");
+				return;
+			}
+			else if (st.st_mode & S_IEXEC)
+			{
+				int p_fd[2];
+				ret = pipe(p_fd);
+				if (ret < 0)
+				{
+					/* code */
+				}
+
+				int pid = fork();
+				if (pid == 0)
+				{
+					const char *last_arg = NULL;
+					if (str_p.back() != "")
+					{
+						last_arg = str_p.back().data();
+					}
+					ret = execl(des_path.data(), str_p[0].data(), to_string(p_fd[0]).data(), to_string(p_fd[1]).data(), "-1", "-1", "GET", last_arg, NULL);
+					if (ret == -1)
+					{
+						// todo
+						perror("execl error");
+					}
+				}
+				else if (pid > 0)
+				{
+					close(p_fd[1]);
+					int status;
+					ret = wait(&status);
+					if (ret == -1)
+					{
+						/*todo code */
+					}
+					else
+					{
+						/* todo write log? */
+						int exit_status = WEXITSTATUS(status);
+						if (exit_status == 0)
+						{
+							response = make_shared<http_response>(200, "OK", protocol, str_p[0]);
+							while ((ret = read(p_fd[0], buf, sizeof(buf))) > 0)
+							{
+								response->add_data(buf);
+							};
+							//cout << response->get_data().size() << endl;
+							response->set_content_length(response->get_data().size());
+						}
+						else if (exit_status == 4)
+						{
+							//todo: write log WTERMSIG(status));
+							event_data::error_mounted(node.fd, response, 404, "Not Found", "resouce is missing");
+							return;
+						}
+						else
+						{
+							event_data::error_mounted(node.fd, response, 500, "Server Error", "content recive error");
+							return;
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			int ret = stat(str_p.front().data(), &st);
+			if (ret < 0)
+			{
+				perror("stat error:");
+				event_data::error_mounted(node.fd, response, 404, "Not Found", "resouce is missing");
+				return;
+			}
+
+			response = make_shared<http_response>(200, "OK", protocol, str_p[0], st.st_size);
+			try
+			{
+				open_file(str_p.front().data(), *response);
+			}
+			catch (const exception &e)
+			{
+				cerr << "[" << get_time() << "]"
+					 << "fail to open file " << str_p[0] << endl;
+				cerr << "[" << get_time() << "]" << e.what() << '\n';
+				response->set_status_code(500);
+				response->set_status_descp("Please Try Again");
+			}
+		}
+	}
+	else if (strcmp(method, "POST") == 0)
+	{
+		int p_fd[2], c_fd[2];
+		int ret = pipe(c_fd);
+		ret = pipe(p_fd);
+		if (ret < 0)
+		{
+			/* code */
+		}
+		close(p_fd[0]);
+		close(c_fd[1]);
 	}
 
-    if (S_ISREG(st.st_mode))
+	//struct stat st;
+	//int ret = stat(str_p[0].data(), &st);
+	//if (ret == -1)
+	//{
+	//	ret = stat(des_path.data(), &st);
+	//	if (ret == -1)
+	//	{
+	//		perror("stat error:");
+	//		event_data::error_mounted(node.fd, response, 404, "Not Found", "resouce is missing");
+	//		return;
+	//	}
+	//}
+
+	/* 	if (S_ISREG(st.st_mode))
 	{
-		response = make_shared<http_response>(200, "OK", protocol, file, st.st_size);
-		try
-		{
-			open_file(file, *response);
-		}
-		catch (const exception &e)
-		{
-			cerr << "[" << get_time() << "]"
-				 << "fail to open file " << file << endl;
-			cerr << "[" << get_time() << "]" << e.what() << '\n';
-			response->set_status_code(500);
-			response->set_status_descp("Please Try Again");
+		if (st.st_mode & S_IEXEC)
+		{ */
+
+	/* 			if (string(method) == "GET")
+			{
+				c_fd[0] = -1;
+				c_fd[1] = -1;
+			} */
+	//else
+	/* 			{
+				ret = pipe(c_fd);
+				close(p_fd[0]);
+				close(c_fd[1]);
+				write(p_fd[1], content, strlen(content) + 1);
+			} */
+	//vector<string> args;
+	/* 			for (int arg : p_fd)
+			{
+				args.push_back(to_string(arg));
+			}
+			for (int arg : c_fd)
+			{
+				args.push_back(to_string(arg));
+			} */
+	/* 			int pid = fork();
+			if (pid == 0)
+			{
+				const char *last_arg = NULL;
+				if (str_p.size() != 1)
+				{
+					last_arg = str_p[1].data();
+				}
+				ret = execl(des_path.data(), str_p[0].data(), args[0].data(), args[1].data(), args[2].data(), args[3].data(), last_arg, NULL);
+				if (ret == -1)
+				{
+					// todo
+					perror("execl error");
+				}
+			}
+			else if (pid > 0)
+			{
+				close(p_fd[1]);
+				int status;
+				ret = wait(&status);
+				if (ret == -1)
+				{
+					/*todo code */
+	//		}
+	//		else
+	//		{
+	/* todo write log? */
+	/*	int exit_status = WEXITSTATUS(status);
+			if (exit_status == 0)
+			{
+				response = make_shared<http_response>(200, "OK", protocol, str_p[0]);
+				while ((ret = read(p_fd[0], buf, sizeof(buf))) > 0)
+				{
+					response->add_data(buf);
+				};
+				//cout << response->get_data().size() << endl;
+				response->set_content_length(response->get_data().size());
+			}
+			else if (exit_status == 4)
+			{
+				//todo: write log WTERMSIG(status));
+				event_data::error_mounted(node.fd, response, 404, "Not Found", "resouce is missing");
+				return;
+			}
+			else
+			{
+				event_data::error_mounted(node.fd, response, 500, "Server Error", "content recive error");
+				return;
+			}
 		}
 	}
-
+	* /
+}
+else
+{
+	/* 	response = make_shared<http_response>(200, "OK", protocol, str_p[0], st.st_size);
+	try
+	{
+		open_file(str_p[0].data(), *response);
+	}
+	catch (const exception &e)
+	{
+		cerr << "[" << get_time() << "]"
+			 << "fail to open file " << str_p[0] << endl;
+		cerr << "[" << get_time() << "]" << e.what() << '\n';
+		response->set_status_code(500);
+		response->set_status_descp("Please Try Again");
+	} */
+	//}
+	//}
 	if (len > 0)
 	{
 		event_data *w_node = new event_data(node.fd, senddata, response);
@@ -184,6 +388,11 @@ void senddata(event_data &node)
 	cout << "[" << get_time() << "]"
 		 << "sending response with status code " << response->get_status_code() << endl;
 	int ret = send(node.fd, response_buf.data(), response_buf.size(), 0);
+	//cout << ret << endl;
+	if (ret < 0)
+	{
+		perror("sending fail");
+	}
 
 	node.unmounted();
 
@@ -196,6 +405,6 @@ void senddata(event_data &node)
 	{
 		close(node.fd);
 	}
-	delete &node;
+	//delete &node;
 	return;
 }

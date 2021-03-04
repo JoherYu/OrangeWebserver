@@ -10,7 +10,16 @@ http_response::http_response(int status_code, string status_descp,
     this->headers.append("Content-Type:").append(get_file_type(file_name)).append("\r\n");
     this->headers.append("Content-Length:").append(to_string(size)).append("\r\n");
 }
-
+http_response::http_response(int status_code, string status_descp,
+                             string protocol, string file_name) : status_code(status_code),
+                                                                             status_descp(status_descp), http(protocol, "", "")
+{
+    this->headers.append("Content-Type:").append(get_file_type(file_name)).append("\r\n");
+    
+}
+void http_response::set_content_length(long size){
+    this->headers.append("Content-Length:").append(to_string(size)).append("\r\n");
+}
 void http_response::set_error_content(const string &info)
 {
     data = "<html><head><title>" + to_string(status_code) + " " + status_descp + "</title></head>\n" +

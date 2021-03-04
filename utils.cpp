@@ -11,12 +11,24 @@
 
 #include <cstdio>
 #include <string>
+#include <vector>
+#include <array>
+#include <memory>
 #include <iostream>
 #include <fstream>
 
 using namespace std;
 
 void open_file(const char *filename, http &response)
+{
+	string data = "";
+	generic_open(filename, data);
+	response.add_data(data);
+
+	//return 0; //todo: sucess flag
+}
+
+void generic_open(const char *filename, string &data)
 {
 	int fd = Open(filename, O_RDONLY);
 	char buf[4096] = {0};
@@ -27,11 +39,9 @@ void open_file(const char *filename, http &response)
 
 	while ((len = Read(fd, buf, sizeof(buf))) > 0)
 	{
-		response.add_data(string(buf, sizeof(buf)));
+		data += string(buf, sizeof(buf));
 	}
 	close(fd);
-
-	//return 0; //todo: sucess flag
 }
 
 int get_line(int fd, char *buf, int buf_size)
@@ -48,7 +58,7 @@ int get_line(int fd, char *buf, int buf_size)
 			{
 				continue;
 			}
-			
+
 			if (c == '\r')
 			{
 				n = Recv(fd, &c, 1, MSG_PEEK);
@@ -81,9 +91,17 @@ string get_file_type(string &filename)
 	{
 		return "image/jpeg";
 	}
-	else if (str_suffix == ".ico")
+	else if (str_suffix == "ico")
 	{
 		return "image/x-icon";
+	}
+	else if (str_suffix == "html")
+	{
+		return "text/html";
+	}
+	else
+	{
+		return "";
 	}
 }
 
@@ -120,12 +138,13 @@ void get_conf(const char *filename, map<string, string> &conf)
 		cout << "[" << get_time() << "]"
 			 << "configure info:" << endl;
 		char line[256];
-		char *key, *value;
+		string key, value;
 		while (conf_file.getline(line, 256))
 		{
-			key = strtok(line, "=");
-			value = strtok(NULL, "=");
-			if (key == 0)
+			array<string, 2> conf_pair = *split_in_2(line, "=");
+			key = conf_pair.front();// strtok(line, "=");
+			value = conf_pair.back();// strtok(NULL, "=");
+			if (key == " ")
 			{
 				continue;
 			}
@@ -182,4 +201,56 @@ char *get_time()
 	char *dt = ctime(&now);
 	dt[strlen(dt) - 1] = 0;
 	return dt;
+}
+
+shared_ptr<array<string, 2>> split_in_2(char *s, const char *delim){
+		shared_ptr<array<string, 2>> result = make_shared<array<string, 2>>();
+	if (*s == '\0')
+	{
+		result->front() = " ";
+		return result;
+	}
+	
+	char *p = strtok(s, delim);
+	result->front() = p;
+	p = strtok(NULL, delim);
+	if (p)
+	{
+		result->back() = p;
+	}
+
+	return result;
+}
+
+shared_ptr<vector<string>> split_path(char *s, const char *delim)
+{
+	shared_ptr<vector<string>> result = make_shared<vector<string>>();
+	if (*s == '\0')
+	{
+		result->push_back(" ");
+		return result;
+	}
+	
+	char *p = strtok(s, delim);
+	result->push_back(p);
+	p = strtok(NULL, delim);
+	if (p)
+	{
+		result->push_back(p);
+	}
+
+	return result;
+}
+
+// not use
+shared_ptr<vector<string>> split_string(char *s, const char *delim)
+{
+	shared_ptr<vector<string>> result = make_shared<vector<string>>();
+	char *p = strtok(s, delim);
+	while (p)
+	{
+		result->push_back(p);
+		p = strtok(NULL, delim);
+	}
+	return result;
 }

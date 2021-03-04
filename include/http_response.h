@@ -12,6 +12,8 @@ class http_response : public http
 public:
     http_response(int status_code, string status_descp);
     http_response(int status_code, string status_descp, string protocol, string file_name, long size);
+    http_response(int status_code, string status_descp, string protocol, string file_name);
+    void set_content_length(long size);
     void set_status_code(int status_code);
     void set_status_descp(const string& status_descp);
     string get_status_code() override;

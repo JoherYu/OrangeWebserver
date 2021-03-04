@@ -11,6 +11,7 @@ public:
     http() = default;
     http(string protocol, string headers, string data);
     void add_data(const string& data);
+    static char* deal_headers(int fd);
     string get_protocol();
     string get_headers();
     string get_data();
