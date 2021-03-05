@@ -52,4 +52,4 @@ $(programme_name): $(test_flag) $(objs)
 	$(compile_flag) $(include_flag) $(debug_flag) $(test_flag) $(objs) -o $(programme_name)
 
 components/login: components/login.cpp $(objs)
-	$(compile_flag) $(include_flag) $(debug_flag) components/login.cpp $(objs) -o components/login
+	$(compile_flag) $(include_flag) $(debug_flag) components/login.cpp $(objs)  `mysql_config --cflags --libs` -o components/login

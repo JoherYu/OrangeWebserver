@@ -34,8 +34,8 @@
         var loginname = $("#loginname").val();
         var password = $("#password").val();
         var code = {
-            "nickName": loginname,
-            "passWord": password,
+            "username": loginname,
+            "password": password,
             "verifyCode": $("#code").val()
         };
         var jsonuserinfo = JSON.stringify(code);
@@ -45,11 +45,11 @@
             url: "http://127.0.0.1:5000/login",
             type: "POST",
             data: jsonuserinfo,
-            dataType: 'json',
+            dataType: 'text',
             cache: false,
             success: function(data) {
                 saveCookie();
-                //location.href = "main.do?url=tab.do"
+                location.href = "index.html"
             },
             error: function(data) {
                 alert("error:" + JSON.stringify(data));
