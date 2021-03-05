@@ -174,7 +174,7 @@ void recvdata(event_data &node)
 					{
 						last_arg = str_p.back().data();
 					}
-					ret = execl(des_path.data(), str_p[0].data(), to_string(p_fd[0]).data(), to_string(p_fd[1]).data(), "-1", "-1", "GET", last_arg, NULL);
+					ret = execl(des_path.data(), str_p.front().data(), to_string(p_fd[0]).data(), to_string(p_fd[1]).data(), "-1", "-1", "GET", last_arg, NULL);
 					if (ret == -1)
 					{
 						// todo
@@ -196,7 +196,7 @@ void recvdata(event_data &node)
 						int exit_status = WEXITSTATUS(status);
 						if (exit_status == 0)
 						{
-							response = make_shared<http_response>(200, "OK", protocol, str_p[0]);
+							response = make_shared<http_response>(200, "OK", protocol, str_p.front());
 							while ((ret = read(p_fd[0], buf, sizeof(buf))) > 0)
 							{
 								response->add_data(buf);
@@ -229,7 +229,7 @@ void recvdata(event_data &node)
 				return;
 			}
 
-			response = make_shared<http_response>(200, "OK", protocol, str_p[0], st.st_size);
+			response = make_shared<http_response>(200, "OK", protocol, str_p.front(), st.st_size);
 			try
 			{
 				open_file(str_p.front().data(), *response);
@@ -237,7 +237,7 @@ void recvdata(event_data &node)
 			catch (const exception &e)
 			{
 				cerr << "[" << get_time() << "]"
-					 << "fail to open file " << str_p[0] << endl;
+					 << "fail to open file " << str_p.front() << endl;
 				cerr << "[" << get_time() << "]" << e.what() << '\n';
 				response->set_status_code(500);
 				response->set_status_descp("Please Try Again");
@@ -246,19 +246,86 @@ void recvdata(event_data &node)
 	}
 	else if (strcmp(method, "POST") == 0)
 	{
+		string des_path = "./components/" + str_p.front();
 		int p_fd[2], c_fd[2];
-		int ret = pipe(c_fd);
-		ret = pipe(p_fd);
+		int ret = pipe(p_fd);
+		ret = pipe(c_fd);
 		if (ret < 0)
 		{
 			/* code */
 		}
-		close(p_fd[0]);
-		close(c_fd[1]);
+
+		int pid = fork();
+		if (pid == 0)
+		{
+/* 			close(p_fd[1]);
+			close(c_fd[0]); */
+			const char *last_arg = NULL;
+			if (str_p.back() != "")
+			{
+				last_arg = str_p.back().data();
+			}
+			ret = execl(des_path.data(), str_p.front().data(), to_string(p_fd[0]).data(), to_string(p_fd[1]).data(), to_string(c_fd[0]).data(), to_string(c_fd[1]).data(), "POST", last_arg, NULL);
+			if (ret == -1)
+			{
+				// todo
+				perror("execl error");
+			}
+		}
+		else if (pid > 0)
+		{
+			ret = close(p_fd[0]);
+			if (ret == -1)
+			{
+				perror("p_fd_0");
+			}
+			
+		    ret = close(c_fd[1]);
+			if (ret == -1)
+			{
+				perror("c_fd_1");
+			}
+			
+			write(p_fd[1], content, string(content).size());
+			close(p_fd[1]);
+			int status;
+			ret = wait(&status);
+			if (ret == -1)
+			{
+				/*todo code */
+			}
+			else
+			{
+				/* todo write log? */
+				int exit_status = WEXITSTATUS(status);
+				if (exit_status == 0)
+				{
+					response = make_shared<http_response>(200, "OK", protocol, str_p.front());
+					while ((ret = read(c_fd[0], buf, sizeof(buf))) > 0)
+					{
+						response->add_data(buf);
+					};
+					//cout << response->get_data().size() << endl;
+					response->set_content_length(response->get_data().size());
+				}
+				else if (exit_status == 4)
+				{
+					//todo: write log WTERMSIG(status));
+					event_data::error_mounted(node.fd, response, 404, "Not Found", "resouce is missing");
+					return;
+				}
+				else
+				{
+					event_data::error_mounted(node.fd, response, 500, "Server Error", "content recive error");
+					return;
+				}
+			}
+		}
+
 	}
 
 	//struct stat st;
-	//int ret = stat(str_p[0].data(), &st);
+	//int ret = stat(str_p.front().data(), &st);
 	//if (ret == -1)
 	//{
 	//	ret = stat(des_path.data(), &st);
@@ -304,7 +371,7 @@ void recvdata(event_data &node)
 				{
 					last_arg = str_p[1].data();
 				}
-				ret = execl(des_path.data(), str_p[0].data(), args[0].data(), args[1].data(), args[2].data(), args[3].data(), last_arg, NULL);
+				ret = execl(des_path.data(), str_p.front().data(), args[0].data(), args[1].data(), args[2].data(), args[3].data(), last_arg, NULL);
 				if (ret == -1)
 				{
 					// todo
@@ -326,7 +393,7 @@ void recvdata(event_data &node)
 	/*	int exit_status = WEXITSTATUS(status);
 			if (exit_status == 0)
 			{
-				response = make_shared<http_response>(200, "OK", protocol, str_p[0]);
+				response = make_shared<http_response>(200, "OK", protocol, str_p.front());
 				while ((ret = read(p_fd[0], buf, sizeof(buf))) > 0)
 				{
 					response->add_data(buf);
@@ -351,15 +418,15 @@ void recvdata(event_data &node)
 }
 else
 {
-	/* 	response = make_shared<http_response>(200, "OK", protocol, str_p[0], st.st_size);
+	/* 	response = make_shared<http_response>(200, "OK", protocol, str_p.front(), st.st_size);
 	try
 	{
-		open_file(str_p[0].data(), *response);
+		open_file(str_p.front().data(), *response);
 	}
 	catch (const exception &e)
 	{
 		cerr << "[" << get_time() << "]"
-			 << "fail to open file " << str_p[0] << endl;
+			 << "fail to open file " << str_p.front() << endl;
 		cerr << "[" << get_time() << "]" << e.what() << '\n';
 		response->set_status_code(500);
 		response->set_status_descp("Please Try Again");

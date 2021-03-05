@@ -16,35 +16,37 @@ endif
 .PHONY : all everything clean
 
 all : everything
-clean : rm -f $(programme_name) 
-allclean : rm -f $(programme_name) $(objs)
+clean : 
+	rm -f $(programme_name) 
+allclean : 
+	rm -f $(programme_name) $(objs)
 everything : $(programme_name)
 components : components/login
 	#$(compile_flag) $(include_flag) $(debug_flag) $(test_flag) event_data.cpp server.cpp http/http.cpp http/http_request.cpp http/http_response.cpp utils.cpp wrappers.cpp event_exception.cpp -o demo
 	
 event_data.o: event_data.cpp
-	$(compile_flag) $(include_flag) -c $<
+	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 
 server.o: server.cpp
-	$(compile_flag) $(include_flag) -c $<
+	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 
-http/http.o: http/http.cpp
-	$(compile_flag) $(include_flag) -c $<
+http.o: http/http.cpp
+	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 
-http/http_request.o: http/http_request.cpp
-	$(compile_flag) $(include_flag) -c $<
+http_request.o: http/http_request.cpp
+	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 
-http/http_response.o: http/http_response.cpp
-	$(compile_flag) $(include_flag) -c $<
+http_response.o: http/http_response.cpp
+	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 
 utils.o: utils.cpp
-	$(compile_flag) $(include_flag) -c $<
+	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 
 wrappers.o: wrappers.cpp
-	$(compile_flag) $(include_flag) -c $<
+	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 
 event_exception.o: event_exception.cpp
-	$(compile_flag) $(include_flag) -c $<
+	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 	
 $(programme_name): $(test_flag) $(objs)
 	$(compile_flag) $(include_flag) $(debug_flag) $(test_flag) $(objs) -o $(programme_name)
