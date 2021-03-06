@@ -84,7 +84,7 @@ int get_line(int fd, char *buf, int buf_size)
 	return i;
 }
 
-string get_file_type(string &filename)
+string get_file_type(string filename)
 {
 	string str_suffix = filename.substr(filename.find_last_of('.') + 1);
 	if (str_suffix == "jpg")
@@ -142,8 +142,8 @@ void get_conf(const char *filename, map<string, string> &conf)
 		while (conf_file.getline(line, 256))
 		{
 			array<string, 2> conf_pair = *split_in_2(line, "=");
-			key = conf_pair.front();  // strtok(line, "=");
-			value = conf_pair.back(); // strtok(NULL, "=");
+			key = conf_pair.front();  
+			value = conf_pair.back(); 
 			if (key == " ")
 			{
 				continue;
@@ -155,9 +155,14 @@ void get_conf(const char *filename, map<string, string> &conf)
 		cout << "[" << get_time() << "]" << endl;
 	}
 
+    check_work_dir(conf, "static_file_dir", "./");
+	check_work_dir(conf, "dynamic_file_dir", "./components/");
+}
+
+void check_work_dir(map<string, string> &conf, string dir, string default_val){
 	cout << "[" << get_time() << "]"
-		 << "set static file dir" << endl;
-	auto path_iter = conf.find("static_file_dir");
+		 << "set " << dir << endl;
+	auto path_iter = conf.find(dir);
 	if (path_iter == conf.end())
 	{
 		/*
@@ -170,9 +175,9 @@ void get_conf(const char *filename, map<string, string> &conf)
 	    }
 		*/
 
-		conf.insert(pair<string, string>("static_file_dir", "./"));
+		conf.insert(pair<string, string>(dir, default_val));
 		cout << "[" << get_time() << "]"
-			 << "change static_file_dir to work dir" << endl;
+			 << "change " << dir << " to work dir" << endl;
 	}
 	else
 	{
@@ -183,13 +188,14 @@ void get_conf(const char *filename, map<string, string> &conf)
 		{
 			perror("stat error:");
 			cout << "[" << get_time() << "]"
-				 << "item: static_file_dir error, change to work dir" << endl;
-			conf["static_file_dir"] = "./";
+				 << "item: " << dir << " error, change to default work dir" << endl;
+				 // todo : create default
+			conf[dir] = default_val;
 		}
 		else
 		{
 			cout << "[" << get_time() << "]"
-				 << "static file dir at " << path << "\n"
+				 << dir <<" at " << path << "\n"
 				 << endl;
 		}
 	}

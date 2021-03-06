@@ -92,7 +92,6 @@ shared_ptr<map<string, string>> parse_json(string req_str)
 	document.Parse(req_str.data());
 	result->insert(pair<string, string>("username", document["username"].GetString()));
 	result->insert(pair<string, string>("password", document["password"].GetString()));
-	//result->back() = document["password"].GetString();
 	return result;
 }
 string sql_query(shared_ptr<map<string, string>> user)

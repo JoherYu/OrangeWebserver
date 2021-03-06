@@ -4,6 +4,7 @@
 #include <string>
 #include "http.h"
 
+
 using namespace std;
 
 class http_response : public http
@@ -11,8 +12,9 @@ class http_response : public http
 
 public:
     http_response(int status_code, string status_descp);
-    http_response(int status_code, string status_descp, string protocol, string file_name, long size);
-    http_response(int status_code, string status_descp, string protocol, string file_name);
+
+    http_response(int status_code, string status_descp, string protocol);
+    void set_content_type(string type_name);
     void set_content_length(long size);
     void set_status_code(int status_code);
     void set_status_descp(const string& status_descp);
@@ -20,7 +22,7 @@ public:
     string get_status_descp() override;
     string get_fix_headers() override;
 
-    void set_error_content(const string& info);
+    void set_error_content(const string& info, response_type type);
 private:
     int status_code;
     string status_descp;

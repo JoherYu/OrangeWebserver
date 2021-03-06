@@ -41,4 +41,6 @@ inline string http::get_data()
     return data;
 }
 
+enum response_type{Static, Dynamic};
+
 #endif
