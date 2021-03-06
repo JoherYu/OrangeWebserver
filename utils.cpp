@@ -142,8 +142,8 @@ void get_conf(const char *filename, map<string, string> &conf)
 		while (conf_file.getline(line, 256))
 		{
 			array<string, 2> conf_pair = *split_in_2(line, "=");
-			key = conf_pair.front();// strtok(line, "=");
-			value = conf_pair.back();// strtok(NULL, "=");
+			key = conf_pair.front();  // strtok(line, "=");
+			value = conf_pair.back(); // strtok(NULL, "=");
 			if (key == " ")
 			{
 				continue;
@@ -203,14 +203,15 @@ char *get_time()
 	return dt;
 }
 
-shared_ptr<array<string, 2>> split_in_2(char *s, const char *delim){
-		shared_ptr<array<string, 2>> result = make_shared<array<string, 2>>();
+shared_ptr<array<string, 2>> split_in_2(char *s, const char *delim)
+{
+	shared_ptr<array<string, 2>> result = make_shared<array<string, 2>>();
 	if (*s == '\0')
 	{
 		result->front() = " ";
 		return result;
 	}
-	
+
 	char *p = strtok(s, delim);
 	result->front() = p;
 	p = strtok(NULL, delim);
@@ -230,7 +231,7 @@ shared_ptr<vector<string>> split_path(char *s, const char *delim)
 		result->push_back(" ");
 		return result;
 	}
-	
+
 	char *p = strtok(s, delim);
 	result->push_back(p);
 	p = strtok(NULL, delim);

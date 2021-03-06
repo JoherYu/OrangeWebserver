@@ -258,7 +258,7 @@ void recvdata(event_data &node)
 		int pid = fork();
 		if (pid == 0)
 		{
-/* 			close(p_fd[1]);
+			/* 			close(p_fd[1]);
 			close(c_fd[0]); */
 			const char *last_arg = NULL;
 			if (str_p.back() != "")
@@ -279,13 +279,13 @@ void recvdata(event_data &node)
 			{
 				perror("p_fd_0");
 			}
-			
-		    ret = close(c_fd[1]);
+
+			ret = close(c_fd[1]);
 			if (ret == -1)
 			{
 				perror("c_fd_1");
 			}
-			
+
 			write(p_fd[1], content, string(content).size());
 			close(p_fd[1]);
 			int status;
@@ -314,6 +314,12 @@ void recvdata(event_data &node)
 					event_data::error_mounted(node.fd, response, 404, "Not Found", "resouce is missing");
 					return;
 				}
+				else if (exit_status == 43)
+				{
+					//todo: write log WTERMSIG(status)); json
+					event_data::error_mounted(node.fd, response, 403, "Forbidden", "login error");
+					return;
+				}
 				else
 				{
 					event_data::error_mounted(node.fd, response, 500, "Server Error", "content recive error");
@@ -321,7 +327,6 @@ void recvdata(event_data &node)
 				}
 			}
 		}
-
 	}
 
 	//struct stat st;
