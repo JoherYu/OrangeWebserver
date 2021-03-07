@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 		{
 			perror("c_fd_2");
 		}
-		
+
 		char buf[1024] = {0};
 		string req_str;
 
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 
 		shared_ptr<map<string, string>> user_info = parse_json(req_str);
 		string res_str = sql_query(user_info);
-		
+
 		ret = write(c_fd_w, res_str.data(), res_str.size());
 		if (ret < 0)
 		{
@@ -96,13 +96,13 @@ shared_ptr<map<string, string>> parse_json(string req_str)
 }
 string sql_query(shared_ptr<map<string, string>> user)
 {
-	
-	string res_str;// didn't use
+
+	string res_str; // didn't use for now
 	string query = "select * from users where username = " + (*user)["username"];
 
 	MYSQL conn;
 	mysql_init(&conn);
-	if (!mysql_real_connect(&conn, "localhost", "root", "123456", "test", 0, NULL, CLIENT_FOUND_ROWS)) //"root":数据库管理员 "":root密码 "test":数据库的名字
+	if (!mysql_real_connect(&conn, "localhost", "root", "123456", "test", 0, NULL, CLIENT_FOUND_ROWS))
 	{
 		cout << mysql_error(&conn) << endl;
 		exit(5);
@@ -115,7 +115,8 @@ string sql_query(shared_ptr<map<string, string>> user)
 		(result = mysql_store_result(&conn)) &&
 		(row = mysql_fetch_row(result)))
 	{
-		if (strcmp(row[1], (*user)["password"].data()) != 0) exit(43);
+		if (strcmp(row[1], (*user)["password"].data()) != 0)
+			exit(43);
 	}
 	else
 	{

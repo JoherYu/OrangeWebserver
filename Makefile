@@ -3,7 +3,7 @@ test_flag = main.cpp
 include_flag = -I include/
 programme_name = demo
 
-objs = event_data.o server.o http.o http_request.o http_response.o utils.o wrappers.o event_exception.o
+objs = event_data.o server.o http.o http_request.o http_response.o utils.o wrappers.o event_exception.o global.o
 
 ifdef debug
     debug_flag = -g
@@ -47,7 +47,10 @@ wrappers.o: wrappers.cpp
 
 event_exception.o: event_exception.cpp
 	$(compile_flag) $(include_flag) $(debug_flag) -c $<
-	
+
+global.o: global.cpp
+	$(compile_flag) $(include_flag) $(debug_flag) -c $<
+
 $(programme_name): $(test_flag) $(objs)
 	$(compile_flag) $(include_flag) $(debug_flag) $(test_flag) $(objs) -o $(programme_name)
 

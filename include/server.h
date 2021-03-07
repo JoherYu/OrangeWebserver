@@ -18,9 +18,8 @@ private:
 	const int PORT;
 	const int MAX_EVENT_NUMBER;
 	int epoll_fd;
-	struct epoll_event* events;;
+	struct epoll_event *events;
+	;
 };
-
-
 
 #endif

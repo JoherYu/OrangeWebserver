@@ -4,6 +4,7 @@
 #include "http_response.h"
 #include "utils.h"
 #include "wrappers.h"
+#include "global.h"
 
 #include <unistd.h>
 #include <sys/socket.h>
@@ -42,12 +43,11 @@ void event_data::process()
 {
 	if (call_back)
 	{
-		(*call_back)(*this); /* find solution*/
+		(*call_back)(*this);
 	}
 	else
 	{
 		this->unmounted();
-		//close?
 	}
 }
 
@@ -67,41 +67,14 @@ void event_data::mounted(int n_event_name)
 	Epoll_ctl(epoll_root, op, fd, &epv);
 }
 
-void event_data::error_mounted(int fd, int error_code, const string &error_data, response_type type)
-{
-	string error_descp;
-	int status_code;
-	string content_type = (type == Static) ? get_file_type(".html") : get_file_type(".json");
-	if (error_code == 4)
-	{
-		status_code = 404;
-		error_descp = "Not Found";
-	}
-	else if (error_code == 43)
-	{
-		status_code = 403;
-		error_descp = "Forbidden";
-	}
-	else if (error_code == 5)
-	{
-		status_code = 500;
-		error_descp = "Server Error";
-	}
-
-	shared_ptr<http_response> response = make_shared<http_response>(status_code, error_descp);
-	response->set_content_type(content_type);
-	response->set_error_content(error_data, type);
-	event_data *w_node = new event_data(fd, senddata, response);
-	w_node->mounted(EPOLLOUT);
-}
-
 void event_data::unmounted()
 {
-
+	/* 
 	if (status != 1)
 		return;
 
-	status = 0;
+	status = 0; */
+
 	Epoll_ctl(epoll_root, EPOLL_CTL_DEL, fd, NULL);
 }
 
@@ -126,7 +99,7 @@ int event_data::get_request_line(event_data &node, char *method, char *path, cha
 			 << "fail to get_line" << endl;
 		cerr << "[" << get_time() << "]" << e.what() << '\n';
 		node.unmounted();
-		event_data::error_mounted(node.fd, 5, "content recive error", Static);
+		event_exception::error_mounted(node.fd, 5, "content recive error", Static);
 		return -1;
 	}
 
@@ -162,56 +135,40 @@ void recvdata(event_data &node)
 	int len = node.get_request_line(node, method, path, protocol);
 	if (len == -1)
 		return;
-	shared_ptr<http_response> response = make_shared<http_response>(protocol);
-
-	node.unmounted();
-
-	char *content = http::deal_headers(node.fd);
 
 	array<string, 2> str_p = *split_in_2(path + 1, "/");
-	if (str_p.front() == " ")
-	{
-		str_p.front() = "index.html";
-	};
-	;
-	struct stat st;
+	str_p.front() = str_p.front() == " " ? "index.html" : str_p.front();
 
-	string type = get_file_type(str_p.front());
-	if (type == "")
+	shared_ptr<http_response> response = make_shared<http_response>(protocol);
+	node.unmounted();
+	try
 	{
-		string des_path = "./components/" + str_p.front();
-		int ret = stat(des_path.data(), &st);
-		if (ret == -1)
+		char *content = http::deal_headers(node.fd);
+
+		string type = get_file_type(str_p.front());
+		if (type == "")
 		{
-			perror("stat error:");
-			event_data::error_mounted(node.fd, 4, "resouce is missing", Dynamic);
-			return;
+			string des_path = conf["dynamic_file_dir"] + str_p.front();
+			if (Stat(des_path.data()) & S_IEXEC)
+				response->deal_dynamic_event(des_path, protocol, node.fd, str_p, content, method);
 		}
-		else if (st.st_mode & S_IEXEC)
+		else
 		{
-			ret = response->deal_dynamic_event(des_path, protocol, node.fd, str_p, content, method);
-			if (ret == -1)
-				return;
+			Stat(str_p.front().data());
+			response->deal_static_event(str_p.front(), protocol);
 		}
 	}
-	else
+	catch (const event_exception &e)
 	{
-		int ret = stat(str_p.front().data(), &st);
-		if (ret < 0)
-		{
-			perror("stat error:");
-			event_data::error_mounted(node.fd, 4, "resouce is missing", Static);
-			return;
-		}
-		ret = response->deal_static_event(str_p.front(), protocol);
-		if (ret == -1)
-			return;
+
+		event_exception::error_mounted(node.fd, e.get_error_code(), e.what(), e.get_type());
+		return;
 	}
 
 	if (len > 0)
 	{
 		event_data *w_node = new event_data(node.fd, senddata, response);
-		w_node->mounted(EPOLLOUT); // error try again?
+		w_node->mounted(EPOLLOUT);
 	}
 	else
 	{
@@ -246,6 +203,5 @@ void senddata(event_data &node)
 	{
 		close(node.fd);
 	}
-	//delete &node;
 	return;
 }

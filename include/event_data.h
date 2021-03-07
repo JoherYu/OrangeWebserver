@@ -26,7 +26,7 @@ public:
 	void unmounted();
 	void process();
 	static void set_root(int root_fd);
-	static void error_mounted(int fd, int error_code, const string &error_data, response_type type); //todo move to event_except
+
 private:
 	int fd;
 	int event_name;

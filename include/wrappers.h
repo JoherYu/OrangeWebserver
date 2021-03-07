@@ -8,6 +8,9 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
+
+using namespace std;
 
 void error_exit(const char *s);
 int Epoll_create(int size);
@@ -21,25 +24,10 @@ int Epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
 ssize_t Recv(int sockfd, char *buf, size_t len, int flags);
 int Open(const char *pathname, int flags);
 ssize_t Read(int fd, void *buf, size_t count);
+int Write(int fd, char *content, string fd_name);
+void Close(int fd, string fd_name);
+mode_t Stat(const char *file_path);
+void Pipe(int *const fds);
+int Wait();
 
-template <typename T>
-void throw_exception(int fd, int error_code, T message, response_type type, string func_name) // todo event store type and move to event_exception
-{
-	string error_message = (std::is_same<T, int>::value) ? strerror(errno) : message;
-	throw event_exception(fd, error_code, error_message, type, func_name);
-	/* 	if 
-	{
-		error_message
-	}
-	
-    if (){
-	    throw event_exception(strerror(errno));
-	} */
-}
-
-template <typename T>
-void throw_exception(T ret_value)
-{
-	throw event_exception(strerror(errno));
-}
 #endif

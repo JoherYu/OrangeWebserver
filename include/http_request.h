@@ -17,6 +17,4 @@ private:
     string url;
 };
 
-
-
 #endif

@@ -25,7 +25,7 @@ void open_file(const char *filename, http &response)
 	generic_open(filename, data);
 	response.add_data(data);
 
-	//return 0; //todo: sucess flag
+	//todo: sucess flag or throw error
 }
 
 void generic_open(const char *filename, string &data)
@@ -43,7 +43,42 @@ void generic_open(const char *filename, string &data)
 	}
 	close(fd);
 }
+/* void create_pipes(initializer_list<int*> arrs){
 
+	for (auto curr = arrs.begin(); curr != arrs.end(); curr++)  
+	{
+		Pipe(*curr);
+	}
+} */
+void create_dup_pipe(int *const p_fd, int *const c_fd, const char *const method)
+{
+	Pipe(p_fd);
+	if (strcmp(method, "GET") == 0)
+	{
+		c_fd[0] = -1;
+		c_fd[1] = -1;
+	}
+	else
+	{
+		Pipe(c_fd);
+	}
+}
+
+void p_deal_pipe(int *p_fd, int *c_fd, char *method, char *content)
+{
+	if (strcmp(method, "GET") == 0)
+	{
+		Close(p_fd[1], "p_fd[1]");
+	}
+	else
+	{
+
+		Close(p_fd[0], "p_fd[0]");
+		Close(c_fd[1], "c_fd[1]");
+		Write(p_fd[1], content, "p_fd[1]");
+		Close(p_fd[1], "p_fd[1]");
+	}
+}
 int get_line(int fd, char *buf, int buf_size)
 {
 	char c = '\0';
@@ -142,8 +177,8 @@ void get_conf(const char *filename, map<string, string> &conf)
 		while (conf_file.getline(line, 256))
 		{
 			array<string, 2> conf_pair = *split_in_2(line, "=");
-			key = conf_pair.front();  
-			value = conf_pair.back(); 
+			key = conf_pair.front();
+			value = conf_pair.back();
 			if (key == " ")
 			{
 				continue;
@@ -155,11 +190,12 @@ void get_conf(const char *filename, map<string, string> &conf)
 		cout << "[" << get_time() << "]" << endl;
 	}
 
-    check_work_dir(conf, "static_file_dir", "./");
+	check_work_dir(conf, "static_file_dir", "./");
 	check_work_dir(conf, "dynamic_file_dir", "./components/");
 }
 
-void check_work_dir(map<string, string> &conf, string dir, string default_val){
+void check_work_dir(map<string, string> &conf, string dir, string default_val)
+{
 	cout << "[" << get_time() << "]"
 		 << "set " << dir << endl;
 	auto path_iter = conf.find(dir);
@@ -189,13 +225,13 @@ void check_work_dir(map<string, string> &conf, string dir, string default_val){
 			perror("stat error:");
 			cout << "[" << get_time() << "]"
 				 << "item: " << dir << " error, change to default work dir" << endl;
-				 // todo : create default
+			// todo : create default
 			conf[dir] = default_val;
 		}
 		else
 		{
 			cout << "[" << get_time() << "]"
-				 << dir <<" at " << path << "\n"
+				 << dir << " at " << path << "\n"
 				 << endl;
 		}
 	}
@@ -249,8 +285,7 @@ shared_ptr<vector<string>> split_path(char *s, const char *delim)
 	return result;
 }
 
-// not use
-shared_ptr<vector<string>> split_string(char *s, const char *delim)
+/* shared_ptr<vector<string>> split_string(char *s, const char *delim)
 {
 	shared_ptr<vector<string>> result = make_shared<vector<string>>();
 	char *p = strtok(s, delim);
@@ -260,4 +295,4 @@ shared_ptr<vector<string>> split_string(char *s, const char *delim)
 		p = strtok(NULL, delim);
 	}
 	return result;
-}
+} */

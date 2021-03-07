@@ -30,8 +30,10 @@ public:
     void deal_static_resource(string filename);
     void deal_dynamic_resource(int r_fd);
     void make_response(string filename, string protocol, function<void()> deal_func);
-    int deal_dynamic_event(string des_path, char *protocol, int fd, array<string, 2> &str_p, char *content, char *method);
-    int deal_static_event(string filepath, char *protocol);
+    void deal_dynamic_event(string des_path, char *protocol, int fd, array<string, 2> &str_p, char *content, char *method);
+    void deal_static_event(string filepath, char *protocol);
+
+    static void set_error_info(const int error_code, int &status_code, string &error_descp);
 
 private:
     int status_code;

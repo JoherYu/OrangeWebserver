@@ -43,8 +43,7 @@ char *http::deal_headers(int fd)
             {
                 break;
             }
-            
-        }
+                }
 
         else if (len == -1)
         {

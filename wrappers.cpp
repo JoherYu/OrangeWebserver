@@ -4,7 +4,10 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
 
+#include <string>
 #include <cstdio>
 
 void error_exit(const char *s)
@@ -83,7 +86,12 @@ int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 int Epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)
 {
 	int ret = epoll_ctl(epfd, op, fd, event);
-	if(ret < 0) throw_exception(ret);
+	if (ret < 0)
+	{
+		perror("epoll_ctl error");
+		Close(fd, "");
+	}
+
 	return ret;
 }
 
@@ -109,15 +117,36 @@ ssize_t Recv(int sockfd, char *buf, size_t len, int flags)
 int Open(const char *pathname, int flags)
 {
 	int ret = open(pathname, flags);
-	if(ret < 0) throw_exception(ret);
+	if (ret < 0)
+		throw_exception(ret);
 	return ret;
 }
 
 ssize_t Read(int fd, void *buf, size_t count)
 {
 	ssize_t ret = read(fd, buf, count);
-	if(ret < 0) throw_exception(ret);
+	if (ret < 0)
+		throw_exception(ret);
 	return ret;
+}
+
+int Write(int fd, char *content, string fd_name)
+{
+	int ret = write(fd, content, string(content).size());
+	if (ret < 0)
+	{
+		perror(("write " + fd_name + "error ").c_str());
+	}
+	return ret;
+}
+
+void Close(int fd, string fd_name)
+{
+	int ret = close(fd);
+	if (ret < 0)
+	{
+		perror(("close " + fd_name + "error ").c_str());
+	}
 }
 
 int Epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout)
@@ -128,4 +157,39 @@ int Epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout)
 		error_exit("epoll_wait error: ");
 	}
 	return ret;
+}
+
+mode_t Stat(const char *file_path)
+{
+	struct stat st;
+	int ret = stat(file_path, &st);
+	if ((ret < 0))
+	{
+		perror("stat error:");
+		throw_exception(4, "resouce is missing", Static);
+	}
+	return st.st_mode;
+}
+
+void Pipe(int *const fds)
+{
+	int ret = pipe(fds);
+	if (ret < 0)
+	{
+		perror("pipe error:");
+		throw_exception(4, "server error", Dynamic);
+	}
+}
+
+int Wait()
+{
+	int status;
+	int ret = wait(&status);
+	if (ret == -1)
+	{
+		perror(("process " + to_string(getpid()) + " wait error ").c_str());
+		throw_exception(5, "server error", Dynamic);
+	}
+
+	return WEXITSTATUS(status);
 }
