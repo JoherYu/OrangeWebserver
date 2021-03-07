@@ -83,7 +83,7 @@ int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 int Epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)
 {
 	int ret = epoll_ctl(epfd, op, fd, event);
-	throw_exception(ret);
+	if(ret < 0) throw_exception(ret);
 	return ret;
 }
 
@@ -109,14 +109,14 @@ ssize_t Recv(int sockfd, char *buf, size_t len, int flags)
 int Open(const char *pathname, int flags)
 {
 	int ret = open(pathname, flags);
-	throw_exception(ret);
+	if(ret < 0) throw_exception(ret);
 	return ret;
 }
 
 ssize_t Read(int fd, void *buf, size_t count)
 {
 	ssize_t ret = read(fd, buf, count);
-	throw_exception(ret);
+	if(ret < 0) throw_exception(ret);
 	return ret;
 }
 

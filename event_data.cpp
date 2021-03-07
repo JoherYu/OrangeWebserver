@@ -50,41 +50,7 @@ void event_data::process()
 		//close?
 	}
 }
-void event_data::deal_static_resource(shared_ptr<http_response> response, string filename)
-{
 
-	try
-	{
-		open_file(filename.data(), *response);
-	}
-	catch (const exception &e)
-	{
-		cerr << "[" << get_time() << "]"
-			 << "fail to open file " << filename << endl;
-		cerr << "[" << get_time() << "]" << e.what() << '\n';
-		response->set_status_code(500);
-		response->set_status_descp("Please Try Again");
-	}
-}
-
-void event_data::deal_dynamic_resource(shared_ptr<http_response> response, int r_fd)
-{
-	char buf[1024] = {0};
-	int ret = 0;
-	while ((ret = read(r_fd, buf, sizeof(buf))) > 0)
-	{
-		response->add_data(buf);
-	};
-}
-
-void event_data::make_response(shared_ptr<http_response> &response, string filename, string protocol, function<void(shared_ptr<http_response>)> deal_func)
-{
-	response = make_shared<http_response>(200, "OK", protocol);
-	deal_func(response);
-	//order matters
-	response->set_content_type(get_file_type(filename));
-	response->set_content_length(response->get_data().size());
-}
 void event_data::mounted(int n_event_name)
 {
 	struct epoll_event epv = {0, {0}};
@@ -139,88 +105,35 @@ void event_data::unmounted()
 	Epoll_ctl(epoll_root, EPOLL_CTL_DEL, fd, NULL);
 }
 
-int event_data::deal_dynamic_event(shared_ptr<http_response> &response, string des_path, char *protocol, int fd, array<string, 2> &str_p, char *content, char *method)
+int event_data::get_request_line(event_data &node, char *method, char *path, char *protocol)
 {
-	int ret = 0;
-	int p_fd[2], c_fd[2];
-	ret = pipe(p_fd);
-	if (strcmp(method, "GET") == 0)
+	char buf[1024] = {0};
+	int len = 0;
+	try
 	{
-		c_fd[0] = -1;
-		c_fd[1] = -1;
-	}
-	else
-	{
-		ret = pipe(c_fd);
-	}
-
-	if (ret < 0)
-	{
-		/* code */
-	}
-	int pid = fork();
-	if (pid == 0)
-	{
-
-		const char *last_arg = NULL;
-		if (str_p.back() != "")
+		len = get_line(node.fd, buf, sizeof(buf));
+		if (len == 0)
 		{
-			last_arg = str_p.back().data();
-		}
-		ret = execl(des_path.data(), str_p.front().data(), to_string(p_fd[0]).data(), to_string(p_fd[1]).data(), to_string(c_fd[0]).data(), to_string(c_fd[1]).data(), method, last_arg, NULL);
-		if (ret == -1)
-		{
-			// todo
-			perror("execl error");
+			node.unmounted();
+			//close(node.fd);
+
+			return -1;
 		}
 	}
-	else if (pid > 0)
+	catch (const exception &e)
 	{
-		if (strcmp(method, "GET") == 0)
-		{
-			close(p_fd[1]);
-		}
-		else
-		{
-
-			ret = close(p_fd[0]);
-			if (ret == -1)
-			{
-				perror("p_fd_0");
-			}
-
-			ret = close(c_fd[1]);
-			if (ret == -1)
-			{
-				perror("c_fd_1");
-			}
-			write(p_fd[1], content, string(content).size());
-			close(p_fd[1]);
-		}
-
-		int status;
-		ret = wait(&status);
-		if (ret == -1)
-		{
-			/*todo code */
-		}
-		else
-		{
-			/* todo write log? */
-			int exit_status = WEXITSTATUS(status);
-			if (exit_status == 0)
-			{
-				int r_fd = strcmp(method, "POST") == 0 ? c_fd[0] : p_fd[0];
-				make_response(response, str_p.front(), protocol, bind(deal_dynamic_resource, _1, r_fd));
-				return 0;
-			}
-			else
-			{
-				event_data::error_mounted(fd, exit_status, "content recive error", Dynamic);
-				return -1;
-			}
-		}
+		cerr << "[" << get_time() << "]"
+			 << "fail to get_line" << endl;
+		cerr << "[" << get_time() << "]" << e.what() << '\n';
+		node.unmounted();
+		event_data::error_mounted(node.fd, 5, "content recive error", Static);
+		return -1;
 	}
+
+	cout << "[" << get_time() << "]" << buf << endl;
+
+	sscanf(buf, "%[^ ] %[^ ] %[^ \n]", method, path, protocol);
+	return len;
 }
 
 void acceptconn(event_data &node)
@@ -245,34 +158,12 @@ void acceptconn(event_data &node)
 
 void recvdata(event_data &node)
 {
-	shared_ptr<http_response> response;
-	char buf[1024] = {0};
-	int len = 0;
-	try
-	{
-		len = get_line(node.fd, buf, sizeof(buf));
-		if (len == 0)
-		{
-			node.unmounted();
-			//close(node.fd);
-
-			return;
-		}
-	}
-	catch (const exception &e)
-	{
-		cerr << "[" << get_time() << "]"
-			 << "fail to get_line" << endl;
-		cerr << "[" << get_time() << "]" << e.what() << '\n';
-		node.unmounted();
-		event_data::error_mounted(node.fd, 5, "content recive error", Static);
-		return;
-	}
-
-	cout << "[" << get_time() << "]" << buf << endl;
-
 	char method[12], path[1024], protocol[12];
-	sscanf(buf, "%[^ ] %[^ ] %[^ \n]", method, path, protocol);
+	int len = node.get_request_line(node, method, path, protocol);
+	if (len == -1)
+		return;
+	shared_ptr<http_response> response = make_shared<http_response>(protocol);
+
 	node.unmounted();
 
 	char *content = http::deal_headers(node.fd);
@@ -298,7 +189,7 @@ void recvdata(event_data &node)
 		}
 		else if (st.st_mode & S_IEXEC)
 		{
-			int ret = event_data::deal_dynamic_event(response, des_path, protocol, node.fd, str_p, content, method);
+			ret = response->deal_dynamic_event(des_path, protocol, node.fd, str_p, content, method);
 			if (ret == -1)
 				return;
 		}
@@ -312,13 +203,15 @@ void recvdata(event_data &node)
 			event_data::error_mounted(node.fd, 4, "resouce is missing", Static);
 			return;
 		}
-		event_data::make_response(response, str_p.front(), protocol, bind(event_data::deal_static_resource, _1, str_p.front()));
+		ret = response->deal_static_event(str_p.front(), protocol);
+		if (ret == -1)
+			return;
 	}
 
 	if (len > 0)
 	{
 		event_data *w_node = new event_data(node.fd, senddata, response);
-		w_node->mounted(EPOLLOUT);
+		w_node->mounted(EPOLLOUT); // error try again?
 	}
 	else
 	{

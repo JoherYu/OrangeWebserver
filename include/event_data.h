@@ -26,7 +26,7 @@ public:
 	void unmounted();
 	void process();
 	static void set_root(int root_fd);
-
+	static void error_mounted(int fd, int error_code, const string &error_data, response_type type); //todo move to event_except
 private:
 	int fd;
 	int event_name;
@@ -37,13 +37,7 @@ private:
 	time_t last_active;
 	static int epoll_root;
 
-	static void deal_static_resource(shared_ptr<http_response> response, string filename);
-	static void deal_dynamic_resource(shared_ptr<http_response> response, int r_fd);
-	static void make_response(shared_ptr<http_response> &response, string filename, string protocol, function<void(shared_ptr<http_response>)> deal_func);
-	
-	static int deal_dynamic_event(shared_ptr<http_response> &response, string des_path, char *protocol, int fd, array<string, 2> &str_p, char *content, char* method);
-
-	static void error_mounted(int fd, int error_code, const string &error_data, response_type type);
+	int get_request_line(event_data &node, char *method, char *path, char *protocol);
 };
 
 inline void event_data::set_root(int root_fd)
