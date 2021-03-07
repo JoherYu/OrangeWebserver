@@ -22,9 +22,8 @@ allclean :
 	rm -f $(programme_name) $(objs)
 everything : $(programme_name)
 components : components/login
-	#$(compile_flag) $(include_flag) $(debug_flag) $(test_flag) event_data.cpp server.cpp http/http.cpp http/http_request.cpp http/http_response.cpp utils.cpp wrappers.cpp event_exception.cpp -o demo
 	
-event_data.o: event_data.cpp
+event_data.o: event/event_data.cpp
 	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 
 server.o: server.cpp
@@ -45,7 +44,7 @@ utils.o: utils.cpp
 wrappers.o: wrappers.cpp
 	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 
-event_exception.o: event_exception.cpp
+event_exception.o: event/event_exception.cpp
 	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 
 global.o: global.cpp
