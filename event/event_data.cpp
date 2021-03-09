@@ -26,28 +26,44 @@ using namespace std;
 using namespace std::placeholders;
 
 int event_data::epoll_root = 0;
+pthread_mutex_t *event_data::locks = NULL;
 
 event_data::event_data(int fd, void (*call_back)(event_data &)) : fd(fd), call_back(call_back), event_name(0), status(0), len(0),
 																  message(NULL)
 {
 	last_active = time(NULL);
+	if (locks == NULL)
+	{
+		int max_event_number = atoi(conf["max_event_number"].data());
+		locks = new pthread_mutex_t[max_event_number];
+		for (int i = 0; i < max_event_number; i++)
+		{
+			pthread_mutex_init(&locks[i], NULL);
+		}
+		//refoctor
+	}
 }
 
 event_data::event_data(int fd, void (*call_back)(event_data &), shared_ptr<http> message) : fd(fd), call_back(call_back), event_name(0), status(0), len(0),
 																							message(message)
 {
 	last_active = time(NULL);
+	if (locks == NULL)
+	{
+		int max_event_number = atoi(conf["max_event_number"].data());
+		locks = new pthread_mutex_t[max_event_number];
+		for (int i = 0; i < max_event_number; i++)
+		{
+			pthread_mutex_init(&locks[i], NULL);
+		}
+	}
 }
 
 void event_data::process()
 {
-	if (call_back)
+	if (call_back && this->fd > 0)
 	{
 		(*call_back)(*this);
-	}
-	else
-	{
-		this->unmounted();
 	}
 }
 
@@ -76,6 +92,7 @@ void event_data::unmounted()
 	status = 0; */
 
 	Epoll_ctl(epoll_root, EPOLL_CTL_DEL, fd, NULL);
+	delete this;
 }
 
 int event_data::get_request_line(event_data &node, char *method, char *path, char *protocol)
@@ -88,8 +105,6 @@ int event_data::get_request_line(event_data &node, char *method, char *path, cha
 		if (len == 0)
 		{
 			node.unmounted();
-			//close(node.fd);
-
 			return -1;
 		}
 	}
@@ -124,13 +139,14 @@ void acceptconn(event_data &node)
 	}
 	cout << "[" << get_time() << "]"
 		 << "new connection from " << inet_ntoa(cin.sin_addr) << ":" << ntohs(cin.sin_port) << endl;
-	event_data cnode(cfd, recvdata);
-	cnode.mounted(EPOLLIN);
-	return;
+	node.unmounted();
+	event_data *cnode = new event_data(cfd, recvdata);
+	cnode->mounted(EPOLLIN);
 };
 
 void recvdata(event_data &node)
 {
+	pthread_mutex_lock(&node.locks[node.fd]);
 	char method[12], path[1024], protocol[12];
 	int len = node.get_request_line(node, method, path, protocol);
 	if (len == -1)
@@ -140,11 +156,12 @@ void recvdata(event_data &node)
 	str_p.front() = str_p.front() == " " ? "index.html" : str_p.front();
 
 	shared_ptr<http_response> response = make_shared<http_response>(protocol);
-	node.unmounted();
+
+	int fd = node.fd; //refactor
 	try
 	{
-		char *content = http::deal_headers(node.fd);
-
+		char *content = http::deal_headers(fd);
+		pthread_mutex_unlock(&node.locks[node.fd]);
 		string type = get_file_type(str_p.front());
 		if (type == "")
 		{
@@ -160,19 +177,20 @@ void recvdata(event_data &node)
 	}
 	catch (const event_exception &e)
 	{
-
-		event_exception::error_mounted(node.fd, e.get_error_code(), e.what(), e.get_type());
+		node.unmounted(); //refactor
+		event_exception::error_mounted(fd, e.get_error_code(), e.what(), e.get_type());
 		return;
 	}
 
 	if (len > 0)
 	{
-		event_data *w_node = new event_data(node.fd, senddata, response);
-		w_node->mounted(EPOLLOUT);
+		node.unmounted();
+		event_data *wnode = new event_data(fd, senddata, response);
+		wnode->mounted(EPOLLOUT);
 	}
 	else
 	{
-		close(node.fd);
+		close(fd);
 	}
 };
 
@@ -191,17 +209,18 @@ void senddata(event_data &node)
 	{
 		perror("sending fail");
 	}
-
-	node.unmounted();
+	int fd = node.fd;
 
 	if (ret > 0)
 	{
-		event_data r_node = event_data(node.fd, recvdata);
-		r_node.mounted(EPOLLIN);
+
+		node.unmounted();
+		event_data *rnode = new event_data(fd, recvdata);
+		rnode->mounted(EPOLLIN);
 	}
 	else
 	{
-		close(node.fd);
+		close(fd);
 	}
 	return;
 }

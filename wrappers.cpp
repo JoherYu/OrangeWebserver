@@ -71,7 +71,7 @@ int Accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen)
 	int ret = 0;
 	while ((ret = accept(sockfd, addr, addrlen)) < 0)
 	{
-		if ((errno == ECONNABORTED) || (errno == EINTR))
+		if (errno = EAGAIN)
 		{
 			continue;
 		}
@@ -92,7 +92,7 @@ int Epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)
 		Close(fd, "");
 	}
 
-	return ret;
+	return ret; // todo return?
 }
 
 ssize_t Recv(int sockfd, char *buf, size_t len, int flags)
@@ -135,7 +135,7 @@ int Write(int fd, char *content, string fd_name)
 	int ret = write(fd, content, string(content).size());
 	if (ret < 0)
 	{
-		perror(("write " + fd_name + "error ").c_str());
+		perror(("write " + fd_name + "error").c_str());
 	}
 	return ret;
 }
@@ -145,7 +145,7 @@ void Close(int fd, string fd_name)
 	int ret = close(fd);
 	if (ret < 0)
 	{
-		perror(("close " + fd_name + "error ").c_str());
+		perror(("close " + fd_name + "error").c_str());
 	}
 }
 
@@ -154,7 +154,10 @@ int Epoll_wait(int epfd, struct epoll_event *events, int maxevents, int timeout)
 	int ret = epoll_wait(epfd, events, maxevents, timeout);
 	if (ret < 0)
 	{
-		error_exit("epoll_wait error: ");
+		if (errno == EINTR)
+			return 0;
+		error_exit("epoll_wait error");
+		return 0;
 	}
 	return ret;
 }
@@ -165,7 +168,7 @@ mode_t Stat(const char *file_path)
 	int ret = stat(file_path, &st);
 	if ((ret < 0))
 	{
-		perror("stat error:");
+		perror("stat error");
 		throw_exception(4, "resouce is missing", Static);
 	}
 	return st.st_mode;
@@ -176,7 +179,7 @@ void Pipe(int *const fds)
 	int ret = pipe(fds);
 	if (ret < 0)
 	{
-		perror("pipe error:");
+		perror("pipe error");
 		throw_exception(4, "server error", Dynamic);
 	}
 }
@@ -187,7 +190,7 @@ int Wait()
 	int ret = wait(&status);
 	if (ret == -1)
 	{
-		perror(("process " + to_string(getpid()) + " wait error ").c_str());
+		perror(("process " + to_string(getpid()) + " wait error").c_str());
 		throw_exception(5, "server error", Dynamic);
 	}
 

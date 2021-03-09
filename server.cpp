@@ -44,7 +44,7 @@ void server::init()
 		 << "server initialization complete" << endl;
 }
 
-void server::start()
+void server::start(threadpool &pool)
 {
 	cout << "[" << get_time() << "]"
 		 << "server start" << endl;
@@ -54,7 +54,10 @@ void server::start()
 		for (int i = 0; i < fd_count; i++)
 		{
 			event_data *node = (event_data *)events[i].data.ptr;
-			node->process();
+			if (node->get_fd() > 0)
+			{
+				pool.add_task(node);
+			}
 		}
 	}
 }

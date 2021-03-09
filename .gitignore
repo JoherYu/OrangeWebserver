@@ -4,3 +4,5 @@
 *.ico
 *.o
 demo
+.wrappers.cpp.swp
+.wrappers.cpp.swo

@@ -144,8 +144,12 @@ void load_default_conf(map<string, string> &configuration)
 {
 	configuration.insert(pair<string, string>("port", "5000"));
 	configuration.insert(pair<string, string>("max_event_number", "1000"));
+	configuration.insert(pair<string, string>("adjust_thread_interval", "10"));
+	configuration.insert(pair<string, string>("min_wait_task_num", "10"));
+	configuration.insert(pair<string, string>("thread_vary_num", "10"));
 }
 
+// refactor all conf fun
 void get_conf(const char *filename, map<string, string> &conf)
 {
 	ifstream conf_file(filename);
@@ -222,7 +226,7 @@ void check_work_dir(map<string, string> &conf, string dir, string default_val)
 		int ret = stat(path, &st);
 		if (ret == -1 || !S_ISDIR(st.st_mode))
 		{
-			perror("stat error:");
+			perror("stat error");
 			cout << "[" << get_time() << "]"
 				 << "item: " << dir << " error, change to default work dir" << endl;
 			// todo : create default

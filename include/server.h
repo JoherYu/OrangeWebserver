@@ -4,6 +4,8 @@
 #include <sys/epoll.h>
 #include <iostream>
 
+#include <threadpool.h>
+
 using namespace std;
 
 class server
@@ -12,7 +14,7 @@ class server
 public:
 	server(int port, int max_event_number);
 	void init();
-	void start();
+	void start(threadpool &pool);
 
 private:
 	const int PORT;

@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 		int ret = stat("login.html", &st);
 		if (ret == -1)
 		{
-			perror("stat error:");
+			perror("stat error");
 			exit(4);
 		}
 		generic_open("login.html", data);

@@ -22,6 +22,7 @@ class event_data
 public:
 	event_data(int fd, void (*call_back)(event_data &));
 	event_data(int fd, void (*call_back)(event_data &), shared_ptr<http> message);
+	int get_fd();
 	void mounted(int n_event_name);
 	void unmounted();
 	void process();
@@ -36,6 +37,7 @@ private:
 	int len;
 	time_t last_active;
 	static int epoll_root;
+	static pthread_mutex_t *locks;
 
 	int get_request_line(event_data &node, char *method, char *path, char *protocol);
 };
@@ -44,6 +46,11 @@ inline void event_data::set_root(int root_fd)
 {
 	epoll_root = root_fd;
 };
+
+inline int event_data::get_fd()
+{
+	return fd;
+}
 
 void acceptconn(event_data &node);
 void recvdata(event_data &node);
