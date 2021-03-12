@@ -24,8 +24,6 @@ void open_file(const char *filename, http &response)
 	string data = "";
 	generic_open(filename, data);
 	response.add_data(data);
-
-	//todo: sucess flag or throw error
 }
 
 void generic_open(const char *filename, string &data)
@@ -149,7 +147,6 @@ void load_default_conf(map<string, string> &configuration)
 	configuration.insert(pair<string, string>("thread_vary_num", "10"));
 }
 
-// refactor all conf fun
 void get_conf(const char *filename, map<string, string> &conf)
 {
 	ifstream conf_file(filename);
@@ -214,7 +211,6 @@ void check_work_dir(map<string, string> &conf, string dir, string default_val)
             exit(-1);
 	    }
 		*/
-
 		conf.insert(pair<string, string>(dir, default_val));
 		cout << "[" << get_time() << "]"
 			 << "change " << dir << " to work dir" << endl;
@@ -252,7 +248,7 @@ char *get_time()
 shared_ptr<array<string, 2>> split_in_2(char *s, const char *delim)
 {
 	shared_ptr<array<string, 2>> result = make_shared<array<string, 2>>();
-	if (*s == '\0')
+	if (*s == '\0' || *delim == '\0')
 	{
 		result->front() = " ";
 		return result;
@@ -269,7 +265,7 @@ shared_ptr<array<string, 2>> split_in_2(char *s, const char *delim)
 	return result;
 }
 
-shared_ptr<vector<string>> split_path(char *s, const char *delim)
+/* shared_ptr<vector<string>> split_path(char *s, const char *delim)
 {
 	shared_ptr<vector<string>> result = make_shared<vector<string>>();
 	if (*s == '\0')
@@ -287,7 +283,7 @@ shared_ptr<vector<string>> split_path(char *s, const char *delim)
 	}
 
 	return result;
-}
+} */
 
 /* shared_ptr<vector<string>> split_string(char *s, const char *delim)
 {

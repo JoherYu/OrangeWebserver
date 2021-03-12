@@ -1,5 +1,5 @@
 compile_flag = g++
-test_flag = main.cpp
+main_file = main.cpp
 include_flag = -I include/
 programme_name = demo
 
@@ -10,7 +10,8 @@ ifdef debug
 endif
 
 ifdef test
-    test_flag = func_test.cpp
+    test_flag = -L/usr/lib/gtest -lgtest -lgtest_main
+	main_file = test/main.cpp
 endif
 
 .PHONY : all everything clean
@@ -53,8 +54,8 @@ event_exception.o: event/event_exception.cpp
 global.o: global.cpp
 	$(compile_flag) $(include_flag) $(debug_flag) -c $<
 
-$(programme_name): $(test_flag) $(objs)
-	$(compile_flag) $(include_flag) $(debug_flag) $(test_flag) $(objs)  -lpthread -o $(programme_name)
+$(programme_name): $(main_file) $(objs)
+	$(compile_flag) $(include_flag) $(debug_flag) $(main_file) $(objs)  -lpthread $(test_flag) -o $(programme_name)
 
 components/login: components/login.cpp $(objs)
 	$(compile_flag) $(include_flag) $(debug_flag) components/login.cpp $(objs)  `mysql_config --cflags --libs` -o components/login

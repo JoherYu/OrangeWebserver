@@ -92,7 +92,7 @@ int Epoll_ctl(int epfd, int op, int fd, struct epoll_event *event)
 		Close(fd, "");
 	}
 
-	return ret; // todo return?
+	return ret;
 }
 
 ssize_t Recv(int sockfd, char *buf, size_t len, int flags)
@@ -102,8 +102,7 @@ ssize_t Recv(int sockfd, char *buf, size_t len, int flags)
 	{
 		if ((errno == EAGAIN) || (errno == EINTR))
 		{
-			//todo: time out
-			return 1; // for get_line: continue
+			return 1; // 配合get_line函数
 		}
 		else
 		{

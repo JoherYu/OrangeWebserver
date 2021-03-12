@@ -1,3 +1,13 @@
+/**
+ * @mainpage OrangeWebserver
+ * @author joher 
+ * @brief Web服务器
+ * @version 0.1
+ * @date 2021-03-12
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #include "server.h"
 #include "utils.h"
 #include "global.h"
