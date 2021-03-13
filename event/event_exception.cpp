@@ -19,3 +19,8 @@ void event_exception::error_mounted(int fd, int error_code, const string &error_
     event_data *w_node = new event_data(fd, senddata, response);
     w_node->mounted(EPOLLOUT);
 }
+
+void throw_exception(int ret_value)
+{
+	throw event_exception(strerror(errno));
+}

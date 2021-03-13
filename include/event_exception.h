@@ -113,8 +113,5 @@ void throw_exception(int error_code, T message, response_type type)
  * 
  * @param ret_value errno（根据errno生成错误信息）
  */
-void throw_exception(int ret_value)
-{
-	throw event_exception(strerror(errno));
-}
+void throw_exception(int ret_value);
 #endif
