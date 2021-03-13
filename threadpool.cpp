@@ -10,7 +10,7 @@ threadpool::threadpool(int min_thr_num, int max_thr_num, int queue_max_size) : m
 	if (pthread_mutex_init(&lock, NULL) != 0 || pthread_mutex_init(&thread_counter, NULL) != 0 || pthread_cond_init(&queue_not_full, NULL) != 0 || pthread_cond_init(&queue_not_empty, NULL) != 0)
 	{
 		cout << "fail to init lock or cond" << endl;
-		exit(0); //todo ::free_threadpool ?
+		exit(0);
 	}
 
 	threads = new pthread_t[max_thr_num];
@@ -88,7 +88,10 @@ void *threadpool::adjust_thread(void *pool_obj)
 		pthread_mutex_lock(&(pool->thread_counter));
 		int busy_thr_count = pool->busy_thr_num;
 		pthread_mutex_unlock(&(pool->thread_counter));
-
+        /**
+         * @brief 线程池扩容，增加thread_vary_num个线程
+         * 
+         */
 		if (queue_count >= min_wait_task_num && live_thr_count < pool->max_thr_num)
 		{
 			pthread_mutex_lock(&(pool->lock));
@@ -104,7 +107,10 @@ void *threadpool::adjust_thread(void *pool_obj)
 			}
 			pthread_mutex_unlock(&(pool->lock));
 		}
-
+        /**
+         * @brief 销毁thread_vary_num个空闲线程
+         * 
+         */
 		if ((busy_thr_count * 2) < live_thr_count && live_thr_count > (pool->min_thr_num))
 		{
 			pthread_mutex_lock(&(pool->lock));

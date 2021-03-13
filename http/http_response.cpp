@@ -128,7 +128,7 @@ void http_response::set_error_info(const int error_code, int &status_code, strin
         status_code = 404;
         error_descp = "Not Found";
     }
-    else if (error_code == 43) //todo enum
+    else if (error_code == 43)
     {
         status_code = 403;
         error_descp = "Forbidden";

@@ -1,10 +1,19 @@
+/**
+ * @file login.cpp
+ * @author joher 
+ * @brief 动态资源请求例子
+ * @version 0.1
+ * @date 2021-03-13
+ * 
+ * @copyright Copyright (c) 2021
+ * 
+ */
 #include "utils.h"
 #include <unistd.h>
 #include <sys/stat.h>
 #include <iostream>
 #include <memory>
 #include <map>
-//#include <errno.h>
 
 #include <cstring>
 
@@ -16,7 +25,10 @@ using namespace std;
 
 shared_ptr<map<string, string>> parse_json(string req_str);
 string sql_query(shared_ptr<map<string, string>> user);
-
+/**
+ * @brief 例子包括进行数据库连接和JSON解析，仅供参考，不debug不重构
+ * 
+ */
 int main(int argc, char *argv[])
 {
 

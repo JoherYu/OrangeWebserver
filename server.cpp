@@ -27,7 +27,7 @@ void server::init()
 	int lfd = Socket(AF_INET, SOCK_STREAM, 0);
 
 	struct sockaddr_in sin;
-	Fcntl(lfd, F_SETFL, O_NONBLOCK);
+	Fcntl(lfd, F_SETFL, O_NONBLOCK); //设置非阻塞
 	memset(&sin, 0, sizeof(sin));
 
 	sin.sin_family = AF_INET;

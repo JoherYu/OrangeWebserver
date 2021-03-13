@@ -40,7 +40,6 @@ event_data::event_data(int fd, void (*call_back)(event_data &)) : fd(fd), call_b
 		{
 			pthread_mutex_init(&locks[i], NULL);
 		}
-		//refoctor
 	}
 }
 
@@ -85,11 +84,10 @@ void event_data::mounted(int n_event_name)
 
 void event_data::unmounted()
 {
-	/* 
 	if (status != 1)
 		return;
 
-	status = 0; */
+	status = 0;
 
 	Epoll_ctl(epoll_root, EPOLL_CTL_DEL, fd, NULL);
 	delete this;
@@ -131,7 +129,7 @@ void acceptconn(event_data &node)
 	int cfd = Accept(node.fd, (struct sockaddr *)&cin, &len);
 	try
 	{
-		Fcntl(cfd, F_SETFL, O_NONBLOCK);
+		Fcntl(cfd, F_SETFL, O_NONBLOCK); //设置为非阻塞方式
 	}
 	catch (const exception &e)
 	{
@@ -139,6 +137,7 @@ void acceptconn(event_data &node)
 	}
 	cout << "[" << get_time() << "]"
 		 << "new connection from " << inet_ntoa(cin.sin_addr) << ":" << ntohs(cin.sin_port) << endl;
+
 	node.unmounted();
 	event_data *cnode = new event_data(cfd, recvdata);
 	cnode->mounted(EPOLLIN);
@@ -157,7 +156,7 @@ void recvdata(event_data &node)
 
 	shared_ptr<http_response> response = make_shared<http_response>(protocol);
 
-	int fd = node.fd; //refactor
+	int fd = node.fd;
 	try
 	{
 		char *content = http::deal_headers(fd);
@@ -177,7 +176,7 @@ void recvdata(event_data &node)
 	}
 	catch (const event_exception &e)
 	{
-		node.unmounted(); //refactor
+		node.unmounted();
 		event_exception::error_mounted(fd, e.get_error_code(), e.what(), e.get_type());
 		return;
 	}
@@ -209,11 +208,11 @@ void senddata(event_data &node)
 	{
 		perror("sending fail");
 	}
+
 	int fd = node.fd;
 
 	if (ret > 0)
 	{
-
 		node.unmounted();
 		event_data *rnode = new event_data(fd, recvdata);
 		rnode->mounted(EPOLLIN);
