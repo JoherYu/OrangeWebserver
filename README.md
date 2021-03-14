@@ -19,6 +19,7 @@ OrangeWebserver
 修改Makefile中programme_name变量可修改程序名
 
     make            #生成可执行文件
+    make components #生成动态资源处理程序
     make allclean   #清除中间生成obj文件
     ./demo          #默认文件名
 
